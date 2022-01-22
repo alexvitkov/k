@@ -14,9 +14,10 @@ Token* Pop1(Cons** tokens) {
   return tok;
 }
 
-Token* Peek(Cons** tokens) {
-  if (!(*tokens)) return NULL;
-  return (*tokens)->Value;
+TokenType Peek(Cons** tokens) {
+  if (!(*tokens)) return TOK_NONE;
+  Token* t = (*tokens)->Value;
+  return t->TokenType;
 }
 
 Token* Expect1(Cons** tokens, TokenType tt) {
@@ -44,18 +45,26 @@ Token* Expect1(Cons** tokens, TokenType tt) {
 #define Expect Expect1
 #endif
 
+Node* ParseExpression(Cons** stream, TokenType delimiter1, TokenType delimiter2);
+Block* ParseBlock(Cons** stream);
+Var* ParseVar(Cons** stream);
+Set* ParseSet(Cons** stream);
+Return* ParseReturn(Cons** stream);
+Node* ParseStatement(Cons** stream);
+If* ParseIf(Cons** stream);
+Fn* ParseFn(Cons** stream);
+
+
 Node* ParseExpression(Cons** stream, TokenType delimiter1, TokenType delimiter2) {
   Node* so_far = NULL;
+  Token t;
 
   while (1) {
-    Token* t = Peek(stream);
-    if (!t) return NULL;
-
-    if (t->TokenType == delimiter1 || t->TokenType == delimiter2) {
+    if (Peek(stream) == delimiter1 || Peek(stream) == delimiter2) {
       return so_far;
-    } else {
-      t = Pop(stream);
     }
+
+    Token* t = Pop(stream);
 
     if (t->TokenType == TOK_ID) {
       if (so_far == NULL) {
@@ -88,7 +97,7 @@ Node* ParseExpression(Cons** stream, TokenType delimiter1, TokenType delimiter2)
 
 	// Parse argument list
 	call->CallArguments = NULL;
-	if (Peek(stream) && Peek(stream)->TokenType == ')') {
+	if (Peek(stream) == ')') {
 	  Pop(stream);
 	} else {
 	  while (1) {
@@ -151,6 +160,30 @@ Return* ParseReturn(Cons** stream) {
   return ret;
 }
 
+If* ParseIf(Cons** stream) {
+  If* if_statement = malloc(sizeof(If));
+  if_statement->NodeType = NODE_IF;
+
+  // Parse condition
+  if_statement->IfCondition = ParseExpression(stream, '{', '{');
+  if (!if_statement->IfCondition) return NULL;
+
+  // Parse then block
+  if_statement->IfThenBlock = ParseBlock(stream); 
+  if (!if_statement->IfThenBlock) return NULL;
+
+  // Parse else block
+  if (Peek(stream) == TOK_ELSE) {
+    Pop(stream);
+    if_statement->IfElseBlock = ParseBlock(stream); 
+    if (!if_statement->IfElseBlock) return NULL;
+  } else {
+    if_statement->IfElseBlock = NULL;
+  }
+
+  return if_statement;
+}
+
 Node* ParseStatement(Cons** stream) {
   Token* tok = Pop(stream);
   if (!tok) return NULL;
@@ -158,6 +191,7 @@ Node* ParseStatement(Cons** stream) {
   if (tok->TokenType == TOK_VAR) return (Node*)ParseVar(stream);
   if (tok->TokenType == TOK_SET) return (Node*)ParseSet(stream);
   if (tok->TokenType == TOK_RETURN) return (Node*)ParseReturn(stream);
+  if (tok->TokenType == TOK_IF) return (Node*)ParseIf(stream);
 
   return NULL;
 }
@@ -169,7 +203,7 @@ Block* ParseBlock(Cons** stream) {
   block->NodeType        = NODE_BLOCK;
   block->BlockStatements = NULL;
 
-  while (Peek(stream)->TokenType != '}') { // TODO null deref
+  while (Peek(stream) != '}') {
     Node* statement = ParseStatement(stream);
     if (!statement) return NULL;
     block->BlockStatements = Append(&block->BlockStatements, statement);
@@ -195,7 +229,7 @@ Fn* ParseFn(Cons** stream) {
 
   if (!Expect(stream, '(')) return NULL;
 
-  if (Peek(stream) && Peek(stream)->TokenType == ')') {
+  if (Peek(stream) == ')') {
     Pop(stream);
   } else {
     while (1) {

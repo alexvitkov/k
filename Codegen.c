@@ -2,6 +2,7 @@
 
 const NUM NUM_SIZE = 8u;
 static NUM CurrentStackOffset;
+static NUM NextLabel = 0;
 
 enum RegisterEnum {
   REG_RAX = 0,
@@ -25,9 +26,14 @@ typedef NUM Register;
 enum OperatorEnum {
   OP_NONE,
   OP_MOV,
+  OP_TEST,
   OP_ADD,
+  OP_JMP,
+  OP_JNZ,
+  OP_JZ,
 };
 typedef NUM Operator;
+
 
 const char* RegisterNames[] = {
   "rax",
@@ -71,6 +77,11 @@ static Location ArgumentLocations[] = {
   { LOC_REGISTER, REG_R8 },
   { LOC_REGISTER, REG_R10 },
 };
+
+static void NewLine();
+static void CodegenBlock(Fn* fn, Block* block);
+static void PrintLocation(Location* loc);
+static NUM GetStackFrameSize(Fn* fn);
 
 static void NewLine() {
   printf("\n    ");
@@ -166,24 +177,54 @@ static void ReleaseTemp() {
 static void CodegenExpression(Fn* fn, Node* expression, Location* expr_location);
 
 static void Emit(Operator op, Location* dst, Location* src) {
-  Location* tmp = src;
+  Location* src1 = src;
+  Location* dst1 = dst;
+
   if (src->LocationSpace == LOC_RBP_RELATIVE && dst->LocationSpace == LOC_RBP_RELATIVE) {
     NewLine();
     printf("MOV ");
-    tmp = &TempRegister;
-    PrintLocation(tmp);
+    src1 = &TempRegister;
+    PrintLocation(src1);
     printf(", ");
     PrintLocation(src);
+  }
+
+  else if (dst->LocationSpace == LOC_CONSTANT) {
+    NewLine();
+    printf("MOV ");
+    dst1 = &TempRegister;
+    PrintLocation(dst1);
+    printf(", ");
+    PrintLocation(dst);
   }
 
   NewLine();
   switch (op) {
   case OP_MOV: printf("MOV "); break;
   case OP_ADD: printf("ADD "); break;
+  case OP_TEST: printf("TEST "); break;
   }
-  PrintLocation(dst);
+  PrintLocation(dst1);
   printf(", ");
-  PrintLocation(tmp);
+  PrintLocation(src1);
+}
+
+static NUM GetLabel() {
+  return NextLabel++;
+}
+
+static void PlaceLabel(NUM label) {
+  printf("\n_label%ld:", label);
+}
+
+static void EmitJump(Operator jumpType, NUM label) {
+  NewLine();
+  switch (jumpType) {
+  case OP_JMP: printf("JMP "); break;
+  case OP_JNZ: printf("JNZ "); break;
+  case OP_JZ: printf("JZ "); break;
+  }
+  printf("_label%ld", label);
 }
 
 static void EmitRet() {
@@ -272,10 +313,31 @@ static void CodegenReturn(Fn* fn, Return* ret) {
   EmitRet();
 }
 
+static void CodegenIf(Fn* fn, If* if_statement) {
+  Location condition;
+  NUM else_label = GetLabel();
+  NUM end_label = GetLabel();
+
+  CodegenExpression(fn, if_statement->IfCondition, &condition);
+
+  Emit(OP_TEST, &condition, &condition);
+  EmitJump(OP_JZ, else_label);
+
+  CodegenBlock(fn, if_statement->IfThenBlock);
+  EmitJump(OP_JMP, end_label);
+  PlaceLabel(else_label);
+
+  if (if_statement->IfElseBlock) {
+    CodegenBlock(fn, if_statement->IfElseBlock);
+  }
+  PlaceLabel(end_label);
+}
+
 static void CodegenStatement(Fn* fn, Node* statement) {
   switch (statement->NodeType) {
     case NODE_SET: CodegenSet(fn, (Set*)statement); return;
     case NODE_RETURN: CodegenReturn(fn, (Return*)statement); return;
+    case NODE_IF: CodegenIf(fn, (If*)statement); return;
   }
 }
 

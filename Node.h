@@ -15,6 +15,7 @@ enum NodeTypeEnum {
   NODE_REFERENCE,
   NODE_CALL,
   NODE_INFIX,
+  NODE_IF,
 };
 typedef NUM NodeType;
 
@@ -65,5 +66,12 @@ typedef struct Call {
   Node* CallFunction;
   Cons* CallArguments;
 } Call;
+
+typedef struct If {
+  NodeType NodeType; // NODE_IF
+  Node* IfCondition;
+  Block* IfThenBlock;
+  Block* IfElseBlock;
+} If;
 
 void PrintNode(Node* node, NUM indent);

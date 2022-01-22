@@ -28,6 +28,18 @@ static void PrintCall(Call* call, NUM indent) {
   printf(")");
 }
 
+static void PrintIf(If* if_statement, NUM indent) {
+  printf("if ");
+  PrintNode(if_statement->IfCondition, indent);
+  printf(" ");
+  PrintNode((Node*)if_statement->IfThenBlock, indent);
+
+  if (if_statement->IfElseBlock) {
+    printf(" else ");
+    PrintNode((Node*)if_statement->IfElseBlock, indent);
+  }
+}
+
 static void PrintReference(Reference* ref, NUM indent) {
   printf("%s", ref->ReferenceName);
 }
@@ -81,6 +93,7 @@ void PrintNode(Node* node, NUM indent) {
     case NODE_REFERENCE: return PrintReference((Reference*)node, indent);
     case NODE_CALL: return PrintCall((Call*)node, indent);
     case NODE_NUMBER: return PrintNumber((Number*)node, indent);
+    case NODE_IF: return PrintIf((If*)node, indent);
     default: printf("node"); return;
   }
 }

@@ -38,11 +38,13 @@ int main(int argc, const char** argv) {
 
   while (nodes) {
     Node* node = nodes->Value;
-    // PrintNode(node, 0);
-    // printf("\n\n");
-    nodes = nodes->Tail;
+
+    /* PrintNode(node, 0); */
+    /* printf("\n\n"); */
 
     Codegen(node);
+
+    nodes = nodes->Tail;
   }
 
   return 0;

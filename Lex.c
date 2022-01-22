@@ -6,6 +6,7 @@
 
 TokenType InferTokenType(char* str) {
   if (strcmp(str, "if") == 0) return TOK_IF;
+  if (strcmp(str, "else") == 0) return TOK_ELSE;
   if (strcmp(str, "while") == 0) return TOK_WHILE;
   if (strcmp(str, "fn") == 0) return TOK_FN;
   if (strcmp(str, "return") == 0) return TOK_RETURN;
