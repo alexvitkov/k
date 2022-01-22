@@ -86,16 +86,21 @@ Cons* LexFile(char* file) {
     Token* current = malloc(sizeof(Token));
 
     // Lex identifier
-    if (IsLetter(file[i])) {
-      if (!is_in_word) {
-	is_in_word = TRUE;
-	word_start = i;
+    if (is_in_word) {
+      if (!IsLetter(file[i]) && !IsDigit(file[i])) {
+	is_in_word = FALSE;
+	list = Append(&list, MakeToken(file, word_start, i - word_start, TOK_INFER_KEYWORD_OR_IDENTIFIER));
       }
+      else {
+	i++;
+	continue;
+      }
+    }
+    else if (IsLetter(file[i])) {
+      is_in_word = TRUE;
+      word_start = i;
       i++;
       continue;
-    } else if (is_in_word) {
-      is_in_word = FALSE;
-      list       = Append(&list, MakeToken(file, word_start, i - word_start, TOK_INFER_KEYWORD_OR_IDENTIFIER));
     }
 
     // Lex number
