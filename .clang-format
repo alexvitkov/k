@@ -1,0 +1,13 @@
+IndentWidth: 2
+AlwaysBreakTemplateDeclarations: Yes
+PointerAlignment: Left
+ReferenceAlignment: Left
+
+AlignOperands: AlignAfterOperator
+BreakBeforeBinaryOperators: All
+
+IndentCaseLabels: true
+
+AlignConsecutiveAssignments: true
+ColumnLimit: 130
+AllowShortCaseLabelsOnASingleLine: true
