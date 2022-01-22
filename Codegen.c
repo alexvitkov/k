@@ -30,6 +30,8 @@ enum OperatorEnum {
   OP_CMP,
   OP_ADD,
   OP_SUB,
+  OP_BAND,
+  OP_BOR,
   OP_JMP,
   OP_JNZ,
   OP_JZ,
@@ -202,10 +204,6 @@ static void AcquireTemp(Location* out) {
   out->LocationOffset = CurrentStackOffset;
 }
 
-static void ReleaseTemp() {
-  CurrentStackOffset += NUM_SIZE;
-}
-
 static void CodegenExpression(Fn* fn, Node* expression, Location* expr_location);
 
 static void Emit(Operator op, Location* dst, Location* src) {
@@ -235,6 +233,8 @@ static void Emit(Operator op, Location* dst, Location* src) {
   case OP_MOV: printf("MOV "); break;
   case OP_ADD: printf("ADD "); break;
   case OP_SUB: printf("SUB "); break;
+  case OP_BAND: printf("AND "); break;
+  case OP_BOR: printf("OR "); break;
   case OP_TEST: printf("TEST "); break;
   case OP_CMP: printf("CMP "); break;
   }
@@ -280,10 +280,10 @@ static void EmitJump(Operator jumpType, NUM label) {
 }
 
 static void EmitRet() {
-  if (CurrentStackOffset != 0) {
-    NewLine();
-    printf("ADD rsp, %ld", -CurrentStackOffset);
-  }
+  NewLine();
+  printf("ADD rsp, 1000");
+  NewLine();
+  printf("POP rbp");
   NewLine();
   printf("RET");
 }
@@ -294,8 +294,7 @@ static void CodegenOperator(Fn* fn, Call* call, Operator op, Location* destinati
 
   Cons* args = call->CallArguments;
 
-  Location arg_location = { LOC_NONE };
-  CodegenExpression(fn, args->Value, &arg_location);
+  CodegenExpression(fn, args->Value, destination);
   args = args->Tail;
 
   while (args) {
@@ -306,8 +305,6 @@ static void CodegenOperator(Fn* fn, Call* call, Operator op, Location* destinati
 
     args = args->Tail;
   }
-
-  if (allocated_temp) ReleaseTemp();
 }
 
 static void CodegenComparisonOperator(Fn* fn, Call* call, Operator op, Location* destination) {
@@ -324,8 +321,6 @@ static void CodegenComparisonOperator(Fn* fn, Call* call, Operator op, Location*
   CodegenExpression(fn, args->Value, &rhs_location);
 
   EmitSet(op, destination, &lhs_location, &rhs_location);
-
-  if (allocated_temp) ReleaseTemp();
 }
 
 static void CodegenCall(Fn* fn, Call* call, Location* destination) {
@@ -339,6 +334,8 @@ static void CodegenCall(Fn* fn, Call* call, Location* destination) {
   /* clang-format off */
   if (strcmp(fn_name, "add") == 0) { CodegenOperator(fn, call, OP_ADD, destination); return; }
   if (strcmp(fn_name, "sub") == 0) { CodegenOperator(fn, call, OP_SUB, destination); return; }
+  if (strcmp(fn_name, "band") == 0) { CodegenOperator(fn, call, OP_BAND, destination); return; }
+  if (strcmp(fn_name, "bor") == 0) { CodegenOperator(fn, call, OP_BOR, destination); return; }
   if (strcmp(fn_name, "gt")  == 0) { CodegenComparisonOperator(fn, call, OP_GT, destination); return; }
   if (strcmp(fn_name, "lt")  == 0) { CodegenComparisonOperator(fn, call, OP_LT, destination); return; }
   if (strcmp(fn_name, "gte") == 0) { CodegenComparisonOperator(fn, call, OP_GE, destination); return; }
@@ -397,7 +394,6 @@ static void CodegenReturn(Fn* fn, Return* ret) {
     CodegenExpression(fn, ret->ReturnValue, &ReturnLocation);
   }
   NewLine();
-  printf("POP rbp");
   EmitRet();
 }
 
@@ -466,12 +462,10 @@ static void CodegenFn(Fn* fn) {
   printf("MOV rbp, rsp");
   NewLine();
   CurrentStackOffset = -GetStackFrameSize(fn);
-  printf("SUB rsp, %ld", -CurrentStackOffset);
+  printf("SUB rsp, 1000");
 
   CodegenBlock(fn, fn->FnBlock);
 
-  NewLine();
-  printf("POP rbp");
   EmitRet();
 
   printf("\n\n");
