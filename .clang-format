@@ -9,5 +9,6 @@ BreakBeforeBinaryOperators: All
 IndentCaseLabels: true
 
 AlignConsecutiveAssignments: true
-ColumnLimit: 130
+ColumnLimit: 110
 AllowShortCaseLabelsOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: true

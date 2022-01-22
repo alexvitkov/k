@@ -5,15 +5,17 @@
 #include <string.h>
 
 TokenType InferTokenType(char* str) {
-  if (strcmp(str, "if") == 0)
-    return TOK_IF;
-  if (strcmp(str, "while") == 0)
-    return TOK_WHILE;
+  if (strcmp(str, "if") == 0) return TOK_IF;
+  if (strcmp(str, "while") == 0) return TOK_WHILE;
+  if (strcmp(str, "fn") == 0) return TOK_FN;
+  if (strcmp(str, "return") == 0) return TOK_RETURN;
+  if (strcmp(str, "set") == 0) return TOK_SET;
+  if (strcmp(str, "var") == 0) return TOK_VAR;
   return TOK_ID;
 }
 
 NUM StrToNum(char* str) {
-  NUM num = 0;
+  NUM num         = 0;
   NUM digitsCount = strlen(str);
 
   NUM digit = 0;
@@ -21,7 +23,7 @@ NUM StrToNum(char* str) {
   while (digit < digitsCount) {
     num *= 10;
     num += str[digit] - '0';
-    digit ++;
+    digit++;
   };
 
   return num;
@@ -35,12 +37,12 @@ Token* MakeToken(char* file, NUM offset, NUM length, TokenType type) {
   tok->Str[length] = 0;
 
   if (type == TOK_INFER_KEYWORD_OR_IDENTIFIER) {
-    tok->Type = InferTokenType(tok->Str);
+    tok->TokenType = InferTokenType(tok->Str);
   } else if (type == TOK_NUMBER) {
-    tok->Number = StrToNum(tok->Str);
-    tok->Type = TOK_NUMBER;
+    tok->TokenNumber = StrToNum(tok->Str);
+    tok->TokenType   = TOK_NUMBER;
   } else {
-    tok->Type = type;
+    tok->TokenType = type;
   }
 
   return tok;
@@ -53,19 +55,13 @@ BOOL IsLetter(char ch) {
   return FALSE;
 }
 
-BOOL IsDigit(char ch) {
-  return ch >= '0' && ch <= '9';
-}
+BOOL IsDigit(char ch) { return ch >= '0' && ch <= '9'; }
 
-BOOL IsSpace(char ch) {
-  return ch == ' ' || ch == '\n' || ch == '\t';
-}
+BOOL IsSpace(char ch) { return ch == ' ' || ch == '\n' || ch == '\t'; }
 
 TokenType GetTwoCharOperator(char c1, char c2) {
-  if ((c1 == '=') && (c2 == '='))
-    return TOK_DOUBLE_EQ;
-  if ((c1 == '&') && (c2 == '&'))
-    return TOK_AND;
+  if ((c1 == '=') && (c2 == '=')) return TOK_DOUBLE_EQ;
+  if ((c1 == '&') && (c2 == '&')) return TOK_AND;
   return TOK_NONE;
 }
 
@@ -79,12 +75,11 @@ TokenType GetSingleCharOperator(char c) {
 Cons* LexFile(char* file) {
   Cons* list = 0;
 
-  BOOL is_in_word = FALSE;
+  BOOL is_in_word   = FALSE;
   BOOL is_in_number = FALSE;
 
-  NUM i           = 0;
-  NUM word_start  = -1;
-
+  NUM i          = 0;
+  NUM word_start = -1;
 
   while (1) {
     Token* current = malloc(sizeof(Token));
@@ -110,10 +105,9 @@ Cons* LexFile(char* file) {
       }
       i++;
       continue;
-    }
-    else if (is_in_number) {
+    } else if (is_in_number) {
       is_in_number = FALSE;
-      list       = Append(&list, MakeToken(file, word_start, i - word_start, TOK_NUMBER));
+      list         = Append(&list, MakeToken(file, word_start, i - word_start, TOK_NUMBER));
     }
 
     // Lex 2-char op
@@ -141,8 +135,7 @@ Cons* LexFile(char* file) {
       break;
     }
 
-    printf("Unexpected character %c\n", file[i]);
-    exit(1);
+    return NULL;
   }
 
   return list;
