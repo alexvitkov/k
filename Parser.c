@@ -52,6 +52,7 @@ Set* ParseSet(Cons** stream);
 Return* ParseReturn(Cons** stream);
 Node* ParseStatement(Cons** stream);
 If* ParseIf(Cons** stream);
+While* ParseWhile(Cons** stream);
 Fn* ParseFn(Cons** stream);
 
 
@@ -184,6 +185,21 @@ If* ParseIf(Cons** stream) {
   return if_statement;
 }
 
+While* ParseWhile(Cons** stream) {
+  While* while_loop = malloc(sizeof(While));
+  while_loop->NodeType = NODE_WHILE;
+
+  // Parse condition
+  while_loop->WhileCondition = ParseExpression(stream, '{', '{');
+  if (!while_loop->WhileCondition) return NULL;
+
+  // Parse then block
+  while_loop->WhileBody = ParseBlock(stream); 
+  if (!while_loop->WhileBody) return NULL;
+
+  return while_loop;
+}
+
 Node* ParseStatement(Cons** stream) {
   Token* tok = Pop(stream);
   if (!tok) return NULL;
@@ -192,6 +208,7 @@ Node* ParseStatement(Cons** stream) {
   if (tok->TokenType == TOK_SET) return (Node*)ParseSet(stream);
   if (tok->TokenType == TOK_RETURN) return (Node*)ParseReturn(stream);
   if (tok->TokenType == TOK_IF) return (Node*)ParseIf(stream);
+  if (tok->TokenType == TOK_WHILE) return (Node*)ParseWhile(stream);
 
   return NULL;
 }

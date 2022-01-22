@@ -40,6 +40,13 @@ static void PrintIf(If* if_statement, NUM indent) {
   }
 }
 
+static void PrintWhile(While* while_loop, NUM indent) {
+  printf("while ");
+  PrintNode(while_loop->WhileCondition, indent);
+  printf(" ");
+  PrintNode((Node*)while_loop->WhileBody, indent);
+}
+
 static void PrintReference(Reference* ref, NUM indent) {
   printf("%s", ref->ReferenceName);
 }
@@ -94,6 +101,7 @@ void PrintNode(Node* node, NUM indent) {
     case NODE_CALL: return PrintCall((Call*)node, indent);
     case NODE_NUMBER: return PrintNumber((Number*)node, indent);
     case NODE_IF: return PrintIf((If*)node, indent);
+    case NODE_WHILE: return PrintWhile((While*)node, indent);
     default: printf("node"); return;
   }
 }

@@ -333,11 +333,29 @@ static void CodegenIf(Fn* fn, If* if_statement) {
   PlaceLabel(end_label);
 }
 
+static void CodegenWhile(Fn* fn, While* while_loop) {
+  Location condition;
+  NUM start_label = GetLabel();
+  NUM done_label = GetLabel();
+
+  PlaceLabel(start_label);
+  CodegenExpression(fn, while_loop->WhileCondition, &condition);
+
+  Emit(OP_TEST, &condition, &condition);
+  EmitJump(OP_JZ, done_label);
+
+  CodegenBlock(fn, while_loop->WhileBody);
+  EmitJump(OP_JMP, start_label);
+
+  PlaceLabel(done_label);
+}
+
 static void CodegenStatement(Fn* fn, Node* statement) {
   switch (statement->NodeType) {
     case NODE_SET: CodegenSet(fn, (Set*)statement); return;
     case NODE_RETURN: CodegenReturn(fn, (Return*)statement); return;
     case NODE_IF: CodegenIf(fn, (If*)statement); return;
+    case NODE_WHILE: CodegenWhile(fn, (While*)statement); return;
   }
 }
 
