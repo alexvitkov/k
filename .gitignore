@@ -1,2 +1,5 @@
 compiler
 test
+*.asm
+run.sh
+build.sh

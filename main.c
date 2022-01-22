@@ -7,7 +7,12 @@
 #include "Util.h"
 
 int main(int argc, const char** argv) {
-  char* file = ReadFile("test");
+  if (argc < 2) {
+    fprintf(stderr, "Usage: %s filename > out.asm\n", argv[0]);
+    return 1;
+  }
+
+  char* file = ReadFile(argv[1]);
   if (!file) {
     printf("Failed to open file\n");
     return 1;
