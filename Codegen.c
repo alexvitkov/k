@@ -27,32 +27,38 @@ enum OperatorEnum {
   OP_NONE,
   OP_MOV,
   OP_TEST,
+  OP_CMP,
   OP_ADD,
   OP_SUB,
   OP_JMP,
   OP_JNZ,
   OP_JZ,
+
+  OP_LT,
+  OP_LE,
+  OP_GT,
+  OP_GE,
+  OP_EQ,
+  OP_NE,
 };
 typedef NUM Operator;
 
 
+/* clang-format off */
 const char* RegisterNames[] = {
-  "rax",
-  "rcx",
-  "rdx",
-  "rbx",
-  "rsp",
-  "rbp",
-  "rsi",
-  "rdi",
-  "r8",
-  "r9",
-  "r10",
-  "r11",
-  "r12",
-  "r13",
-  "r14",
+  "rax", "rcx", "rdx", "rbx",
+  "rsp", "rbp", "rsi", "rdi",
+  "r8", "r9", "r10", "r11",
+  "r12", "r13", "r14",
 };
+
+const char* RegisterNames8[] = {
+  "al", "cl", "dl", "bl",
+  "spl", "bpl", "sil", "dil",
+  "r8l", "r9l", "r10l", "r11l",
+  "r12l", "r13l", "r14l",
+};
+/* clang-format on */
 
 enum LocationSpace {
   LOC_NONE,
@@ -83,6 +89,7 @@ static Location ArgumentLocations[] = {
 static void NewLine();
 static void CodegenBlock(Fn* fn, Block* block);
 static void PrintLocation(Location* loc);
+static void PrintLocationByte(Location* loc);
 static NUM GetStackFrameSize(Fn* fn);
 
 static void NewLine() {
@@ -111,6 +118,25 @@ static void PrintLocation(Location* loc) {
     }
     case LOC_NONE: {
       printf("<<<<<NONE>>>>>");
+      return;
+    }
+  }
+}
+
+static void PrintLocationByte(Location* loc) {
+  switch (loc->LocationSpace) {
+    case LOC_REGISTER: {
+      printf("%s", RegisterNames8[loc->LocationOffset]);
+      return;
+    }
+    case LOC_RBP_RELATIVE: {
+      if (loc->LocationOffset > 0) {
+	printf("BYTE +%ld[rbp]", loc->LocationOffset);
+      } else if (loc->LocationOffset < 0) {
+	printf("BYTE -%ld[rbp]", -loc->LocationOffset);
+      } else {
+	printf("BYTE [rbp]");
+      }
       return;
     }
   }
@@ -210,10 +236,29 @@ static void Emit(Operator op, Location* dst, Location* src) {
   case OP_ADD: printf("ADD "); break;
   case OP_SUB: printf("SUB "); break;
   case OP_TEST: printf("TEST "); break;
+  case OP_CMP: printf("CMP "); break;
   }
   PrintLocation(dst1);
   printf(", ");
   PrintLocation(src1);
+}
+
+static void EmitSet(Operator op, Location* dst, Location* lhs, Location* rhs) {
+  Emit(OP_CMP, lhs, rhs);
+
+  Emit(OP_MOV, dst, &ZeroLocation);
+
+  NewLine();
+  switch (op) {
+    case OP_LT: printf("SETL "); break;
+    case OP_LE: printf("SETLE "); break;
+    case OP_GT: printf("SETG "); break;
+    case OP_GE: printf("SETGE "); break;
+    case OP_EQ: printf("SETE "); break;
+    case OP_NE: printf("SETNE "); break;
+  }
+
+  PrintLocationByte(dst);
 }
 
 static NUM GetLabel() {
@@ -251,7 +296,6 @@ static void CodegenOperator(Fn* fn, Call* call, Operator op, Location* destinati
 
   Location arg_location = { LOC_NONE };
   CodegenExpression(fn, args->Value, &arg_location);
-  Emit(OP_MOV, destination, &arg_location);
   args = args->Tail;
 
   while (args) {
@@ -266,6 +310,24 @@ static void CodegenOperator(Fn* fn, Call* call, Operator op, Location* destinati
   if (allocated_temp) ReleaseTemp();
 }
 
+static void CodegenComparisonOperator(Fn* fn, Call* call, Operator op, Location* destination) {
+  BOOL allocated_temp = destination->LocationSpace == LOC_NONE;
+  if (allocated_temp) AcquireTemp(destination);
+
+  Location lhs_location = { LOC_NONE };
+  Location rhs_location = { LOC_NONE };
+
+  Cons* args = call->CallArguments;
+  CodegenExpression(fn, args->Value, &lhs_location);
+
+  args = args->Tail;
+  CodegenExpression(fn, args->Value, &rhs_location);
+
+  EmitSet(op, destination, &lhs_location, &rhs_location);
+
+  if (allocated_temp) ReleaseTemp();
+}
+
 static void CodegenCall(Fn* fn, Call* call, Location* destination) {
   if (call->CallFunction->NodeType != NODE_REFERENCE) {
     fprintf(stderr, "Invalid function call\n");
@@ -274,15 +336,16 @@ static void CodegenCall(Fn* fn, Call* call, Location* destination) {
 
   const char* fn_name = ((Reference*)call->CallFunction)->ReferenceName;
 
-  if(strcmp(fn_name, "add") == 0) {
-    CodegenOperator(fn, call, OP_ADD, destination);
-    return;
-  }
-
-  if(strcmp(fn_name, "sub") == 0) {
-    CodegenOperator(fn, call, OP_SUB, destination);
-    return;
-  }
+  /* clang-format off */
+  if (strcmp(fn_name, "add") == 0) { CodegenOperator(fn, call, OP_ADD, destination); return; }
+  if (strcmp(fn_name, "sub") == 0) { CodegenOperator(fn, call, OP_SUB, destination); return; }
+  if (strcmp(fn_name, "gt")  == 0) { CodegenComparisonOperator(fn, call, OP_GT, destination); return; }
+  if (strcmp(fn_name, "lt")  == 0) { CodegenComparisonOperator(fn, call, OP_LT, destination); return; }
+  if (strcmp(fn_name, "gte") == 0) { CodegenComparisonOperator(fn, call, OP_GE, destination); return; }
+  if (strcmp(fn_name, "lte") == 0) { CodegenComparisonOperator(fn, call, OP_LE, destination); return; }
+  if (strcmp(fn_name, "eq")  == 0) { CodegenComparisonOperator(fn, call, OP_EQ, destination); return; }
+  if (strcmp(fn_name, "neq") == 0) { CodegenComparisonOperator(fn, call, OP_NE, destination); return; }
+  /* clang-format on */
 
   fprintf(stderr, "Undefined function '%s'\n", fn_name);
 }
