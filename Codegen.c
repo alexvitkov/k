@@ -28,6 +28,7 @@ enum OperatorEnum {
   OP_MOV,
   OP_TEST,
   OP_ADD,
+  OP_SUB,
   OP_JMP,
   OP_JNZ,
   OP_JZ,
@@ -202,6 +203,7 @@ static void Emit(Operator op, Location* dst, Location* src) {
   switch (op) {
   case OP_MOV: printf("MOV "); break;
   case OP_ADD: printf("ADD "); break;
+  case OP_SUB: printf("SUB "); break;
   case OP_TEST: printf("TEST "); break;
   }
   PrintLocation(dst1);
@@ -238,9 +240,14 @@ static void EmitRet() {
 
 static void CodegenOperator(Fn* fn, Call* call, Operator op, Location* destination) {
   AcquireTemp(destination);
-  Emit(OP_MOV, destination, &ZeroLocation);
 
   Cons* args = call->CallArguments;
+
+  Location arg_location;
+  CodegenExpression(fn, args->Value, &arg_location);
+  Emit(OP_MOV, destination, &arg_location);
+  args = args->Tail;
+
   while (args) {
     Node* arg_expression = args->Value;
     Location arg_location;
@@ -263,6 +270,11 @@ static void CodegenCall(Fn* fn, Call* call, Location* destination) {
 
   if(strcmp(fn_name, "add") == 0) {
     CodegenOperator(fn, call, OP_ADD, destination);
+    return;
+  }
+
+  if(strcmp(fn_name, "sub") == 0) {
+    CodegenOperator(fn, call, OP_SUB, destination);
     return;
   }
 
