@@ -113,7 +113,6 @@ Node* ParseExpression(Cons** stream, TokenType delimiter1, TokenType delimiter2)
     }
 
     if (t->TokenType == '(') {
-      infix_lhs = so_far;
       if (!hanging_operator && so_far) {
 	// Function call
 	Call* call         = malloc(sizeof(Call));
@@ -136,9 +135,11 @@ Node* ParseExpression(Cons** stream, TokenType delimiter1, TokenType delimiter2)
 	  }
 	}
 
+	infix_lhs          = so_far;
 	so_far = (Node*)call;
 	continue;
       } else {
+	infix_lhs          = so_far;
 	so_far = ParseExpression(stream, ')', ')');
 	if (!so_far) return NULL;
 

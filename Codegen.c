@@ -307,6 +307,28 @@ static void CodegenOperator(Fn* fn, Call* call, Operator op, Location* destinati
   }
 }
 
+static void PushArgs() {
+  NewLine();
+  printf("PUSH ");
+  PrintLocation(&ReturnLocation);
+  for (NUM i = 0; i < 6; i++) {
+    NewLine();
+    printf("PUSH ");
+    PrintLocation(&ArgumentLocations[i]);
+  }
+}
+
+static void PopArgs() {
+  for (NUM i = 5; i >= 0; i--) {
+    NewLine();
+    printf("POP ");
+    PrintLocation(&ArgumentLocations[i]);
+  }
+  NewLine();
+  printf("POP ");
+  PrintLocation(&ReturnLocation);
+}
+
 static void CodegenComparisonOperator(Fn* fn, Call* call, Operator op, Location* destination) {
   BOOL allocated_temp = destination->LocationSpace == LOC_NONE;
   if (allocated_temp) AcquireTemp(destination);
@@ -331,6 +353,7 @@ static void CodegenCall(Fn* fn, Call* call, Location* destination) {
 
   const char* fn_name = ((Reference*)call->CallFunction)->ReferenceName;
 
+  // Builtins:
   /* clang-format off */
   if (strcmp(fn_name, "+") == 0) { CodegenOperator(fn, call, OP_ADD, destination); return; }
   if (strcmp(fn_name, "-") == 0) { CodegenOperator(fn, call, OP_SUB, destination); return; }
@@ -344,7 +367,26 @@ static void CodegenCall(Fn* fn, Call* call, Location* destination) {
   if (strcmp(fn_name, "!=") == 0) { CodegenComparisonOperator(fn, call, OP_NE, destination); return; }
   /* clang-format on */
 
-  fprintf(stderr, "Undefined function '%s'\n", fn_name);
+  BOOL allocated_temp = destination->LocationSpace == LOC_NONE;
+  if (allocated_temp) AcquireTemp(destination);
+
+  PushArgs();
+
+  NUM argument_index = 0;
+  Cons* arg = call->CallArguments;
+  while (arg) {
+    CodegenExpression(fn, arg->Value, &ArgumentLocations[argument_index]);
+    arg = arg->Tail;
+    argument_index++;
+  }
+
+  NewLine();
+  printf("CALL %s", fn_name);
+  Emit(OP_MOV, &TempRegister, &ReturnLocation);
+  PopArgs();
+  Emit(OP_MOV, destination, &TempRegister);
+
+  return;
 }
 
 static void CodegenExpression(Fn* fn, Node* expression, Location* expr_location) {
