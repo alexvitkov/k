@@ -10,3 +10,9 @@
 
 #define NUM int64_t
 #define BOOL int64_t
+
+
+typedef struct Cons Cons;
+
+void GlobalCodegen();
+BOOL ParseFile(Cons* tokens);

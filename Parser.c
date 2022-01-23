@@ -1,4 +1,4 @@
-#include "Parser.h"
+#include "ProgramData.h"
 #include "Cons.h"
 #include "Lex.h"
 #include "Node.h"
@@ -55,7 +55,7 @@ Node* ParseStatement(Cons** stream);
 If* ParseIf(Cons** stream);
 While* ParseWhile(Cons** stream);
 Fn* ParseFn(Cons** stream);
-ExternFn* ParseExternFn(Cons** stream);
+BOOL ParseExternFn(Cons** stream);
 
 BOOL IsInfix(TokenType tt) {
   return tt == '&' || tt == '|' || tt == '+' || tt == '-' || tt == '*' || tt == '/' || tt == '<' || tt == '>'
@@ -305,70 +305,63 @@ Fn* ParseFn(Cons** stream) {
   return fn;
 }
 
-ExternFn* ParseExternFn(Cons** stream) {
-  ExternFn* efn = malloc(sizeof(ExternFn));
-  efn->NodeType = NODE_EXTERNFN;
-
+BOOL ParseExternFn(Cons** stream) {
   Token* name = Expect(stream, TOK_ID);
-  if (!name) return NULL;
-  efn->ExternFnName = name->Str;
+  if (!name) return FALSE;
 
-  if (!Expect(stream, ';'))
-    return NULL;
+  ExternFunctions = Append(&ExternFunctions, name->Str);
 
-  return efn;
+  if (!Expect(stream, ';')) return FALSE;
+  return TRUE;
 }
 
-Const* ParseConst(Cons** stream) {
-  Const* constant      = malloc(sizeof(Const));
-  constant->NodeType = NODE_CONST;
+BOOL ParseConst(Cons** stream) {
+  Const* constant = malloc(sizeof(Const));
 
   Token* tok = Expect(stream, TOK_ID);
-  if (!tok) return NULL;
+  if (!tok) return FALSE;
   constant->ConstName = tok->Str;
 
-  if (!Expect(stream, '=')) return NULL;
+  if (!Expect(stream, '=')) return FALSE;
 
   Token* num = Expect(stream, TOK_NUMBER);
-  if (!num) return NULL;
+  if (!num) return FALSE;
   constant->ConstValue = num->TokenNumber;
 
-  if (!Expect(stream, ';')) return NULL;
-  return constant;
+  Consts = Append(&Consts, constant);
+
+  if (!Expect(stream, ';')) return FALSE;
+  return TRUE;
 }
 
-Cons* ParseTopLevel(Cons* tokens) {
+BOOL ParseFile(Cons* tokens) {
   Cons* ast    = NULL;
   Cons* stream = tokens;
 
   while (1) {
-    if (!stream) return ast;
+    if (!stream) break;
     Token* tok = Pop(&stream);
     if (!tok) break;
 
     switch (tok->TokenType) {
       case TOK_FN: {
         Fn* fn = ParseFn(&stream);
-        if (!fn) return NULL;
-        ast = Append(&ast, fn);
+        if (!fn) return FALSE;
+        Functions = Append(&Functions, fn);
         break;
       }
 
       case TOK_EXTERNFN: {
-	ExternFn* efn = ParseExternFn(&stream);
-	if (!efn) return NULL;
-        ast = Append(&ast, efn);
+	if (!ParseExternFn(&stream)) return FALSE;
 	break;
       }
 
       case TOK_CONST: {
-	Const* constant = ParseConst(&stream);
-	if (!constant) return NULL;
-	ast = Append(&ast, constant);
+	if (!ParseConst(&stream)) return FALSE;
 	break;
       }
     }
   }
 
-  return ast;
+  return TRUE;
 }
