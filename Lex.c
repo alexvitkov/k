@@ -87,7 +87,12 @@ Cons* LexFile(char* file) {
   NUM word_start = -1;
 
   while (1) {
-    Token* current = malloc(sizeof(Token));
+    // Lex comments
+    if (file[i] == '/' && file[i+1] == '/') {
+      while (file[i] != '\n')
+	i++;
+      continue;
+    }
 
     // Lex identifier
     if (is_in_word) {
