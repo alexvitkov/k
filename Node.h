@@ -17,6 +17,7 @@ enum NodeTypeEnum {
   NODE_INFIX,
   NODE_IF,
   NODE_WHILE,
+  NODE_STRING,
 };
 typedef NUM NodeType;
 
@@ -80,5 +81,11 @@ typedef struct While {
   Node* WhileCondition;
   Block* WhileBody;
 } While;
+
+typedef struct String {
+  NodeType NodeType; // NODE_STRING
+  const char* StringStr;
+  NUM StringLabel;
+} String;
 
 void PrintNode(Node* node, NUM indent);

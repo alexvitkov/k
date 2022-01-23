@@ -84,6 +84,25 @@ Token* LexCharacterLiteral(char* file, NUM* offset_ptr) {
   return tok;
 }
 
+Token* LexString(char* file, NUM* offset_ptr) {
+  Token* tok = NULL;
+  NUM offset = *offset_ptr;
+
+  if (file[offset] != '"')
+    return NULL;
+
+  offset++;
+
+  while (file[offset] != '"')
+    offset++;
+
+  tok = MakeToken(file, *offset_ptr + 1, offset - *offset_ptr - 1, TOK_STRING);
+
+  offset++;
+  *offset_ptr = offset;
+  return tok;
+}
+
 TokenType GetSingleCharOperator(char c) {
   if (c == '&' || c == '+' || c == '-' || c == '*' || c == '/' || c == '%' || c == '|' || c == '=' || c == ';' || c == '(' || c == ')' || c == '{' || c == '}' || c == ',' || c == '<' || c == '>') {
     return c;
@@ -112,6 +131,13 @@ Cons* LexFile(char* file) {
 
     // Character literal
     tok = LexCharacterLiteral(file, &i);
+    if (tok) {
+      list = Append(&list, tok);
+      continue;
+    }
+
+    // String
+    tok = LexString(file, &i);
     if (tok) {
       list = Append(&list, tok);
       continue;

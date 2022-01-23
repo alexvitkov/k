@@ -7,6 +7,7 @@ enum TokenTypeEnum {
 
   TOK_ID = 128,
   TOK_NUMBER = 129,
+  TOK_STRING = 130,
 
   // operators
   TOK_DOUBLE_EQUAL = 200,

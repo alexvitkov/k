@@ -113,6 +113,17 @@ Node* ParseExpression(Cons** stream, TokenType delimiter1, TokenType delimiter2)
       continue;
     }
 
+    if (t->TokenType == TOK_STRING) {
+      infix_lhs        = so_far;
+      String* str      = malloc(sizeof(String));
+      str->NodeType    = NODE_STRING;
+      str->StringStr   = t->Str;
+      so_far           = (Node*)str;
+
+      Strings = Append(&Strings, str);
+      continue;
+    }
+
     if (t->TokenType == '(') {
       if (!hanging_operator && so_far) {
 	// Function call

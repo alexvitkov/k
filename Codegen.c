@@ -69,6 +69,7 @@ enum LocationSpace {
   LOC_REGISTER,
   LOC_RBP_RELATIVE,
   LOC_CONSTANT,
+  LOC_STRING,
 };
 typedef NUM LocationSpace;
 
@@ -120,6 +121,10 @@ static void PrintLocation(Location* loc) {
       } else {
 	printf("QWORD [rbp]");
       }
+      return;
+    }
+    case LOC_STRING: {
+      printf("_string%ld", loc->LocationOffset);
       return;
     }
     case LOC_NONE: {
@@ -481,6 +486,18 @@ static void CodegenExpression(Fn* fn, Node* expression, Location* expr_location)
       return;
     }
 
+    case NODE_STRING: {
+      String* str = (String*)expression;
+      if (expr_location->LocationSpace == LOC_NONE) {
+	expr_location->LocationSpace  = LOC_STRING;
+	expr_location->LocationOffset = str->StringLabel;
+      } else {
+	Location loc = {LOC_STRING, str->StringLabel};
+	Emit(OP_MOV, expr_location, &loc);
+      }
+      return;
+    }
+
     case NODE_REFERENCE: {
       const char* name = ((Reference*)expression)->ReferenceName;
 
@@ -611,6 +628,20 @@ void GlobalCodegen() {
     efn = efn->Tail;
   }
 
+  printf(".data:\n");
+  Cons* strings = Strings;
+  NUM str_index = 0;
+  while (strings) {
+    String* str = strings->Value;
+    str->StringLabel = str_index;
+
+    strings = strings->Tail;
+    str_index = str_index + 1;
+
+    printf("_string%ld: db \"%s\", 0\n", str->StringLabel, str->StringStr);
+  }
+
+  printf(".text:\n");
   Cons* fn = Functions;
   while (fn) {
     CodegenFn((Fn*)fn->Value);
