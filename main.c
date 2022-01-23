@@ -36,16 +36,14 @@ int main(int argc, const char** argv) {
   // c = c->Tail;
   // }
 
-  while (nodes) {
-    Node* node = nodes->Value;
+  /* while (nodes) { */
+  /*   Node* node = nodes->Value; */
+  /*   PrintNode(node, 0); */
+  /*   printf("\n\n"); */
+  /*   nodes = nodes->Tail; */
+  /* } */
 
-    /* PrintNode(node, 0); */
-    /* printf("\n\n"); */
-
-    Codegen(node);
-
-    nodes = nodes->Tail;
-  }
+  GlobalCodegen(nodes);
 
   return 0;
 }

@@ -4,3 +4,4 @@
 
 
 void Codegen(Node* node);
+void GlobalCodegen(Cons* nodes);

@@ -4,6 +4,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+BOOL IsDigit(char ch);
+BOOL IsSpace(char ch);
+BOOL IsLetter(char ch);
+NUM StrToNum(char* str);
+
 TokenType InferTokenType(char* str) {
   if (strcmp(str, "if") == 0) return TOK_IF;
   if (strcmp(str, "else") == 0) return TOK_ELSE;
@@ -15,20 +20,6 @@ TokenType InferTokenType(char* str) {
   return TOK_ID;
 }
 
-NUM StrToNum(char* str) {
-  NUM num         = 0;
-  NUM digitsCount = strlen(str);
-
-  NUM digit = 0;
-
-  while (digit < digitsCount) {
-    num *= 10;
-    num += str[digit] - '0';
-    digit++;
-  };
-
-  return num;
-}
 
 Token* MakeToken(char* file, NUM offset, NUM length, TokenType type) {
   Token* tok = malloc(sizeof(Token));
@@ -49,9 +40,6 @@ Token* MakeToken(char* file, NUM offset, NUM length, TokenType type) {
   return tok;
 }
 
-BOOL IsDigit(char ch);
-BOOL IsSpace(char ch);
-BOOL IsLetter(char ch);
 
 TokenType GetTwoCharOperator(char c1, char c2) {
   if ((c1 == '=') && (c2 == '=')) return TOK_DOUBLE_EQUAL;

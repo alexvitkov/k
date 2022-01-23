@@ -298,9 +298,16 @@ static void EmitMul(Location* dst, Location* lhs, Location* rhs) {
   Push(&RAX);
   Emit(OP_MOV, &RAX, lhs);
 
+
+  Location* rhs2 = rhs;
+  if (rhs2->LocationSpace == LOC_CONSTANT) {
+    Emit(OP_MOV, &TempRegister, rhs2);
+    rhs2 = &TempRegister;
+  }
+
   NewLine();
   printf("MUL ");
-  PrintLocation(rhs);
+  PrintLocation(rhs2);
 
   Emit(OP_MOV, dst, &RAX);
 
@@ -376,6 +383,22 @@ static void CodegenComparisonOperator(Fn* fn, Call* call, Operator op, Location*
   }
 }
 
+static void CodegenGet8(Fn* fn, Call* call, Location* destination) {
+  BOOL allocated_temp = destination->LocationSpace == LOC_NONE;
+  if (allocated_temp) AcquireTemp(destination);
+
+  CodegenExpression(fn, call->CallArguments->Value, &TempRegister);
+  Emit(OP_MOV, destination, &ZeroLocation);
+
+  NewLine();
+  printf("MOV r11b, [R11]");
+  
+  NewLine();
+  printf("MOV ");
+  PrintLocationByte(destination);
+  printf(", r11b");
+}
+
 static void CodegenCall(Fn* fn, Call* call, Location* destination) {
   if (call->CallFunction->NodeType != NODE_REFERENCE) {
     fprintf(stderr, "Invalid function call\n");
@@ -398,6 +421,11 @@ static void CodegenCall(Fn* fn, Call* call, Location* destination) {
   if (strcmp(fn_name, "!=") == 0) { CodegenComparisonOperator(fn, call, OP_NE, destination); return; }
   if (strcmp(fn_name, "*") == 0)  { CodegenComparisonOperator(fn, call, OP_MUL, destination); return; }
   /* clang-format on */
+
+  if (strcmp(fn_name, "get8") == 0) {
+    CodegenGet8(fn, call, destination);
+    return;
+  }
 
   BOOL allocated_temp = destination->LocationSpace == LOC_NONE;
   if (allocated_temp) AcquireTemp(destination);
@@ -549,4 +577,13 @@ void Codegen(Node* node) {
   switch (node->NodeType) {
     case NODE_FN: CodegenFn((Fn*)node); return;
   }
+}
+
+void GlobalCodegen(Cons* nodes) {
+  while (nodes) {
+    Node* node = nodes->Value;
+    Codegen(node);
+    nodes = nodes->Tail;
+  }
+
 }
