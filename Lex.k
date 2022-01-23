@@ -1,3 +1,4 @@
+externfn strcmp;
 
 fn IsSpace(ch) {
    return (ch == ' ') | (ch == '\n') | (ch == '\t');
@@ -42,4 +43,38 @@ fn StrToNum(str) {
     }
 
     return num;
+}
+
+fn InferTokenType(str) {
+  if (strcmp(str, "if")) == 0 { return TOK_IF; }
+  if (strcmp(str, "else")) == 0 { return TOK_ELSE; }
+  if (strcmp(str, "while")) == 0 { return TOK_WHILE; }
+  if (strcmp(str, "fn")) == 0 { return TOK_FN; }
+  if (strcmp(str, "return")) == 0 { return TOK_RETURN; }
+  if (strcmp(str, "set")) == 0 { return TOK_SET; }
+  if (strcmp(str, "var")) == 0 { return TOK_VAR; }
+  if (strcmp(str, "externfn")) == 0 { return TOK_EXTERNFN; }
+  if (strcmp(str, "const")) == 0 { return TOK_CONST; }
+  return TOK_ID;
+}
+
+fn GetTwoCharOperator(c1, c2) {
+  if (c1 == '=') & (c2 == '=') { return TOK_DOUBLE_EQUAL; }
+  if (c1 == '!') & (c2 == '=') { return TOK_NOT_EQUAL; }
+  if (c1 == '&') & (c2 == '&') { return TOK_DOUBLE_AND; }
+  if (c1 == '|') & (c2 == '|') { return TOK_DOUBLE_OR; }
+  if (c1 == '>') & (c2 == '=') { return TOK_GREATER_THAN_EQUAL; }
+  if (c1 == '<') & (c2 == '=') { return TOK_LESS_THAN_EQUAL; }
+  return TOK_NONE;
+}
+
+fn GetSingleCharOperator(c) {
+  if ((c == '&') | (c == '+') | (c == '-') | (c == '*')
+    | (c == '/') | (c == '%') | (c == '|') | (c == '=')
+    | (c == ';') | (c == '(') | (c == ')') | (c == '{')
+    | (c == '}') | (c == ',') | (c == '<') | (c == '>'))
+  {
+    return c;
+  }
+  return TOK_NONE;
 }

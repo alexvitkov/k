@@ -8,19 +8,9 @@ BOOL IsDigit(char ch);
 BOOL IsSpace(char ch);
 BOOL IsLetter(char ch);
 NUM StrToNum(char* str);
-
-TokenType InferTokenType(char* str) {
-  if (strcmp(str, "if") == 0) return TOK_IF;
-  if (strcmp(str, "else") == 0) return TOK_ELSE;
-  if (strcmp(str, "while") == 0) return TOK_WHILE;
-  if (strcmp(str, "fn") == 0) return TOK_FN;
-  if (strcmp(str, "return") == 0) return TOK_RETURN;
-  if (strcmp(str, "set") == 0) return TOK_SET;
-  if (strcmp(str, "var") == 0) return TOK_VAR;
-  if (strcmp(str, "externfn") == 0) return TOK_EXTERNFN;
-  if (strcmp(str, "const") == 0) return TOK_CONST;
-  return TOK_ID;
-}
+TokenType InferTokenType(char* str);
+TokenType GetTwoCharOperator(char c1, char c2);
+TokenType GetSingleCharOperator(char c);
 
 
 Token* MakeToken(char* file, NUM offset, NUM length, TokenType type) {
@@ -40,17 +30,6 @@ Token* MakeToken(char* file, NUM offset, NUM length, TokenType type) {
   }
 
   return tok;
-}
-
-
-TokenType GetTwoCharOperator(char c1, char c2) {
-  if ((c1 == '=') && (c2 == '=')) return TOK_DOUBLE_EQUAL;
-  if ((c1 == '!') && (c2 == '=')) return TOK_NOT_EQUAL;
-  if ((c1 == '&') && (c2 == '&')) return TOK_DOUBLE_AND;
-  if ((c1 == '|') && (c2 == '|')) return TOK_DOUBLE_OR;
-  if ((c1 == '>') && (c2 == '=')) return TOK_GREATER_THAN_EQUAL;
-  if ((c1 == '<') && (c2 == '=')) return TOK_LESS_THAN_EQUAL;
-  return TOK_NONE;
 }
 
 Token* LexCharacterLiteral(char* file, NUM* offset_ptr) {
@@ -103,12 +82,6 @@ Token* LexString(char* file, NUM* offset_ptr) {
   return tok;
 }
 
-TokenType GetSingleCharOperator(char c) {
-  if (c == '&' || c == '+' || c == '-' || c == '*' || c == '/' || c == '%' || c == '|' || c == '=' || c == ';' || c == '(' || c == ')' || c == '{' || c == '}' || c == ',' || c == '<' || c == '>') {
-    return c;
-  }
-  return TOK_NONE;
-}
 
 Cons* LexFile(char* file) {
   Cons* list = 0;

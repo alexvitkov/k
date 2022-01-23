@@ -1,3 +1,5 @@
+const TOK_NONE = 0;
+
 const TOK_ID = 128;
 const TOK_NUMBER = 129;
 const TOK_STRING = 130;
