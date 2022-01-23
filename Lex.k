@@ -1,18 +1,17 @@
 
 fn IsSpace(ch) {
-   //      space        newline      tab
-   return (ch == 32) | (ch == 10) | (ch == 9);
+   return (ch == ' ') | (ch == '\n') | (ch == '\t');
 }
 
 fn IsLetter(ch) {
-   if (ch >= 97) & (ch <= 122) { return 1; } // a-z
-   if (ch >= 65) & (ch <= 90)  { return 1; } // A-Z
-   if ch == 95                 { return 1; } // underscore
+   if (ch >= 'a') & (ch <= 'z') { return 1; }
+   if (ch >= 'A') & (ch <= 'Z') { return 1; }
+   if ch == '_'                 { return 1; } 
    return 0;
 }
 
 fn IsDigit(ch) {
-   return (ch >= 48) & (ch <= 57);
+   return (ch >= '0') & (ch <= '9');
 }
 
 fn StrLen(str) {
@@ -38,7 +37,7 @@ fn StrToNum(str) {
 
     while digit < digits_count {
         set num = num * 10;
-        set num = num + (get8(str + digit)) - 48;
+        set num = num + (get8(str + digit)) - '0';
  	set digit = digit + 1;
     }
 

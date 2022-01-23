@@ -51,6 +51,37 @@ TokenType GetTwoCharOperator(char c1, char c2) {
   return TOK_NONE;
 }
 
+Token* LexCharacterLiteral(char* file, NUM* offset_ptr) {
+  Token* tok = NULL;
+  NUM offset = *offset_ptr;
+
+  if (file[offset] != '\'')
+    return NULL;
+
+  offset++;
+  if (file[offset] == '\\') {
+    tok = MakeToken(file, *offset_ptr, 3, TOK_NONE);
+    offset++;
+    switch (file[offset]) {
+    case 'n': tok->TokenNumber = '\n'; break;
+    case 't': tok->TokenNumber = '\t'; break;
+    case '\'': tok->TokenNumber = '\''; break;
+    case '\\': tok->TokenNumber = '\\'; break;
+    default: fprintf(stderr, "Invalid escape sequence"); exit(1);
+    }
+  }
+  else {
+    tok = MakeToken(file, *offset_ptr, 2, TOK_NONE);
+    tok->TokenNumber = file[offset];
+  }
+
+  offset += 2;
+
+  tok->TokenType = TOK_NUMBER;
+  *offset_ptr = offset;
+  return tok;
+}
+
 TokenType GetSingleCharOperator(char c) {
   if (c == '&' || c == '+' || c == '-' || c == '*' || c == '/' || c == '%' || c == '|' || c == '=' || c == ';' || c == '(' || c == ')' || c == '{' || c == '}' || c == ',' || c == '<' || c == '>') {
     return c;
@@ -67,11 +98,20 @@ Cons* LexFile(char* file) {
   NUM i          = 0;
   NUM word_start = -1;
 
+  Token* tok;
+
   while (1) {
     // Lex comments
     if (file[i] == '/' && file[i+1] == '/') {
       while (file[i] != '\n')
 	i++;
+      continue;
+    }
+
+    // Character literal
+    tok = LexCharacterLiteral(file, &i);
+    if (tok) {
+      list = Append(&list, tok);
       continue;
     }
 
