@@ -58,7 +58,7 @@ BOOL IsLetter(char ch) {
 
 BOOL IsDigit(char ch) { return ch >= '0' && ch <= '9'; }
 
-BOOL IsSpace(char ch) { return ch == ' ' || ch == '\n' || ch == '\t'; }
+BOOL IsSpace(char ch);
 
 TokenType GetTwoCharOperator(char c1, char c2) {
   if ((c1 == '=') && (c2 == '=')) return TOK_DOUBLE_EQUAL;
@@ -150,6 +150,7 @@ Cons* LexFile(char* file) {
       break;
     }
 
+    fprintf(stderr, "Unexpected character '%c'\n", file[i]);
     return NULL;
   }
 
