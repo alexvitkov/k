@@ -49,16 +49,9 @@ Token* MakeToken(char* file, NUM offset, NUM length, TokenType type) {
   return tok;
 }
 
-BOOL IsLetter(char ch) {
-  if (ch >= 'a' && ch <= 'z') return TRUE;
-  if (ch >= 'A' && ch <= 'Z') return TRUE;
-  if (ch == '_') return TRUE;
-  return FALSE;
-}
-
-BOOL IsDigit(char ch) { return ch >= '0' && ch <= '9'; }
-
+BOOL IsDigit(char ch);
 BOOL IsSpace(char ch);
+BOOL IsLetter(char ch);
 
 TokenType GetTwoCharOperator(char c1, char c2) {
   if ((c1 == '=') && (c2 == '=')) return TOK_DOUBLE_EQUAL;
