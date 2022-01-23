@@ -31,6 +31,7 @@ enum OperatorEnum {
   OP_ADD,
   OP_SUB,
   OP_BAND,
+  OP_MUL,
   OP_BOR,
   OP_JMP,
   OP_JNZ,
@@ -93,6 +94,8 @@ static void CodegenBlock(Fn* fn, Block* block);
 static void PrintLocation(Location* loc);
 static void PrintLocationByte(Location* loc);
 static NUM GetStackFrameSize(Fn* fn);
+static void Push(Location* loc);
+static void Pop(Location* loc);
 
 static void NewLine() {
   printf("\n    ");
@@ -261,6 +264,50 @@ static void EmitSet(Operator op, Location* dst, Location* lhs, Location* rhs) {
   PrintLocationByte(dst);
 }
 
+static void Push(Location* loc) {
+  NewLine();
+  printf("PUSH ");
+  PrintLocation(loc);
+}
+
+static void Pop(Location* loc) {
+  NewLine();
+  printf("POP ");
+  PrintLocation(loc);
+}
+
+static void PushArgs() {
+  Push(&ReturnLocation);
+  for (NUM i = 0; i < 6; i++) {
+    Push(&ArgumentLocations[i]);
+  }
+}
+
+static void PopArgs() {
+  for (NUM i = 5; i >= 0; i--) {
+    Pop(&ArgumentLocations[i]);
+  }
+  Pop(&ReturnLocation);
+}
+
+static void EmitMul(Location* dst, Location* lhs, Location* rhs) {
+  Location RDX = { LOC_REGISTER, REG_RAX };
+  Location RAX = { LOC_REGISTER, REG_RAX };
+
+  Push(&RDX);
+  Push(&RAX);
+  Emit(OP_MOV, &RAX, lhs);
+
+  NewLine();
+  printf("MUL ");
+  PrintLocation(rhs);
+
+  Emit(OP_MOV, dst, &RAX);
+
+  Pop(&RAX);
+  Pop(&RDX);
+}
+
 static NUM GetLabel() {
   return NextLabel++;
 }
@@ -307,27 +354,6 @@ static void CodegenOperator(Fn* fn, Call* call, Operator op, Location* destinati
   }
 }
 
-static void PushArgs() {
-  NewLine();
-  printf("PUSH ");
-  PrintLocation(&ReturnLocation);
-  for (NUM i = 0; i < 6; i++) {
-    NewLine();
-    printf("PUSH ");
-    PrintLocation(&ArgumentLocations[i]);
-  }
-}
-
-static void PopArgs() {
-  for (NUM i = 5; i >= 0; i--) {
-    NewLine();
-    printf("POP ");
-    PrintLocation(&ArgumentLocations[i]);
-  }
-  NewLine();
-  printf("POP ");
-  PrintLocation(&ReturnLocation);
-}
 
 static void CodegenComparisonOperator(Fn* fn, Call* call, Operator op, Location* destination) {
   BOOL allocated_temp = destination->LocationSpace == LOC_NONE;
@@ -342,7 +368,12 @@ static void CodegenComparisonOperator(Fn* fn, Call* call, Operator op, Location*
   args = args->Tail;
   CodegenExpression(fn, args->Value, &rhs_location);
 
-  EmitSet(op, destination, &lhs_location, &rhs_location);
+  if (op == OP_MUL) {
+    EmitMul(destination, &lhs_location, &rhs_location);
+  }
+  else {
+    EmitSet(op, destination, &lhs_location, &rhs_location);
+  }
 }
 
 static void CodegenCall(Fn* fn, Call* call, Location* destination) {
@@ -365,6 +396,7 @@ static void CodegenCall(Fn* fn, Call* call, Location* destination) {
   if (strcmp(fn_name, "<=") == 0) { CodegenComparisonOperator(fn, call, OP_LE, destination); return; }
   if (strcmp(fn_name, "==")  == 0) { CodegenComparisonOperator(fn, call, OP_EQ, destination); return; }
   if (strcmp(fn_name, "!=") == 0) { CodegenComparisonOperator(fn, call, OP_NE, destination); return; }
+  if (strcmp(fn_name, "*") == 0)  { CodegenComparisonOperator(fn, call, OP_MUL, destination); return; }
   /* clang-format on */
 
   BOOL allocated_temp = destination->LocationSpace == LOC_NONE;
