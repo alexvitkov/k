@@ -1,5 +1,7 @@
 #include "Node.h"
 
+static Cons* CurrentFile;
+
 const NUM NUM_SIZE = 8u;
 static NUM CurrentStackOffset;
 static NUM NextLabel = 0;
@@ -399,6 +401,19 @@ static void CodegenGet8(Fn* fn, Call* call, Location* destination) {
   printf(", r11b");
 }
 
+static BOOL IsPLT(const char* name) {
+  Cons* nodes = CurrentFile;
+
+  while (nodes) {
+    Node* node = nodes->Value;
+    if (node->NodeType == NODE_EXTERNFN && strcmp(name, ((ExternFn*)node)->ExternFnName) == 0) {
+      return TRUE;
+    }
+    nodes = nodes->Tail;
+  }
+  return FALSE;
+}
+
 static void CodegenCall(Fn* fn, Call* call, Location* destination) {
   if (call->CallFunction->NodeType != NODE_REFERENCE) {
     fprintf(stderr, "Invalid function call\n");
@@ -442,6 +457,10 @@ static void CodegenCall(Fn* fn, Call* call, Location* destination) {
 
   NewLine();
   printf("CALL %s", fn_name);
+
+  if (IsPLT(fn_name))
+    printf(" WRT ..plt");
+
   Emit(OP_MOV, &TempRegister, &ReturnLocation);
   PopArgs();
   Emit(OP_MOV, destination, &TempRegister);
@@ -573,16 +592,24 @@ static void CodegenFn(Fn* fn) {
   printf("\n\n");
 }
 
-void Codegen(Node* node) {
-  switch (node->NodeType) {
-    case NODE_FN: CodegenFn((Fn*)node); return;
-  }
-}
+void GlobalCodegen(Cons* _nodes) {
+  CurrentFile = _nodes;
 
-void GlobalCodegen(Cons* nodes) {
+  Cons* nodes = _nodes;
   while (nodes) {
     Node* node = nodes->Value;
-    Codegen(node);
+    if (node->NodeType == NODE_EXTERNFN) {
+      printf("extern %s\n", ((ExternFn*)node)->ExternFnName);
+    }
+    nodes = nodes->Tail;
+  }
+
+  nodes = _nodes;
+  while (nodes) {
+    Node* node = nodes->Value;
+    if (node->NodeType == NODE_FN) {
+      CodegenFn((Fn*)node);
+    }
     nodes = nodes->Tail;
   }
 

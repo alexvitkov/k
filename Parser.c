@@ -55,6 +55,7 @@ Node* ParseStatement(Cons** stream);
 If* ParseIf(Cons** stream);
 While* ParseWhile(Cons** stream);
 Fn* ParseFn(Cons** stream);
+ExternFn* ParseExternFn(Cons** stream);
 
 BOOL IsInfix(TokenType tt) {
   return tt == '&' || tt == '|' || tt == '+' || tt == '-' || tt == '*' || tt == '/' || tt == '<' || tt == '>'
@@ -304,6 +305,20 @@ Fn* ParseFn(Cons** stream) {
   return fn;
 }
 
+ExternFn* ParseExternFn(Cons** stream) {
+  ExternFn* efn = malloc(sizeof(ExternFn));
+  efn->NodeType = NODE_EXTERNFN;
+
+  Token* name = Expect(stream, TOK_ID);
+  if (!name) return NULL;
+  efn->ExternFnName = name->Str;
+
+  if (!Expect(stream, ';'))
+    return NULL;
+
+  return efn;
+}
+
 Cons* ParseTopLevel(Cons* tokens) {
   Cons* ast    = NULL;
   Cons* stream = tokens;
@@ -319,6 +334,12 @@ Cons* ParseTopLevel(Cons* tokens) {
         if (!fn) return NULL;
         ast = Append(&ast, fn);
         break;
+      }
+
+      case TOK_EXTERNFN: {
+	ExternFn* efn = ParseExternFn(&stream);
+	if (!efn) return NULL;
+        ast = Append(&ast, efn);
       }
     }
   }

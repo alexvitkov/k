@@ -27,6 +27,7 @@ enum TokenTypeEnum {
   TOK_RETURN,
   TOK_VAR,
   TOK_SET,
+  TOK_EXTERNFN,
 
   // pseudo tokens
   TOK_INFER_KEYWORD_OR_IDENTIFIER = 128,

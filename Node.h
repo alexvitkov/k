@@ -17,6 +17,7 @@ enum NodeTypeEnum {
   NODE_INFIX,
   NODE_IF,
   NODE_WHILE,
+  NODE_EXTERNFN,
 };
 typedef NUM NodeType;
 
@@ -80,5 +81,10 @@ typedef struct While {
   Node* WhileCondition;
   Block* WhileBody;
 } While;
+
+typedef struct ExternFn {
+  NodeType NodeType; // NODE_EXTERNFN
+  const char* ExternFnName;
+} ExternFn;
 
 void PrintNode(Node* node, NUM indent);
