@@ -61,13 +61,17 @@ BOOL IsDigit(char ch) { return ch >= '0' && ch <= '9'; }
 BOOL IsSpace(char ch) { return ch == ' ' || ch == '\n' || ch == '\t'; }
 
 TokenType GetTwoCharOperator(char c1, char c2) {
-  if ((c1 == '=') && (c2 == '=')) return TOK_DOUBLE_EQ;
-  if ((c1 == '&') && (c2 == '&')) return TOK_AND;
+  if ((c1 == '=') && (c2 == '=')) return TOK_DOUBLE_EQUAL;
+  if ((c1 == '!') && (c2 == '=')) return TOK_NOT_EQUAL;
+  if ((c1 == '&') && (c2 == '&')) return TOK_DOUBLE_AND;
+  if ((c1 == '|') && (c2 == '|')) return TOK_DOUBLE_OR;
+  if ((c1 == '>') && (c2 == '=')) return TOK_GREATER_THAN_EQUAL;
+  if ((c1 == '<') && (c2 == '=')) return TOK_LESS_THAN_EQUAL;
   return TOK_NONE;
 }
 
 TokenType GetSingleCharOperator(char c) {
-  if (c == '=' || c == ';' || c == '(' || c == ')' || c == '{' || c == '}' || c == ',' || c == '<' || c == '>') {
+  if (c == '&' || c == '+' || c == '-' || c == '*' || c == '/' || c == '%' || c == '|' || c == '=' || c == ';' || c == '(' || c == ')' || c == '{' || c == '}' || c == ',' || c == '<' || c == '>') {
     return c;
   }
   return TOK_NONE;

@@ -2,6 +2,7 @@
 #include "Cons.h"
 #include "Lex.h"
 #include "Node.h"
+#include <string.h>
 
 //#define DEBUG_TOKENS
 
@@ -55,42 +56,65 @@ If* ParseIf(Cons** stream);
 While* ParseWhile(Cons** stream);
 Fn* ParseFn(Cons** stream);
 
+BOOL IsInfix(TokenType tt) {
+  return tt == '&' || tt == '|' || tt == '+' || tt == '-' || tt == '*' || tt == '/' || tt == '<' || tt == '>'
+      || tt == TOK_DOUBLE_EQUAL || tt == TOK_NOT_EQUAL || tt == TOK_GREATER_THAN || tt == TOK_LESS_THAN
+      || tt == TOK_GREATER_THAN_EQUAL || tt == TOK_LESS_THAN_EQUAL || tt == TOK_DOUBLE_AND
+      || tt == TOK_DOUBLE_OR;
+}
 
 Node* ParseExpression(Cons** stream, TokenType delimiter1, TokenType delimiter2) {
-  Node* so_far = NULL;
-  Token t;
+  Node* so_far            = NULL;
+  Node* infix_lhs         = NULL;
+  Token* hanging_operator = NULL;
+  Token* t                = NULL;
 
   while (1) {
+    if (hanging_operator && infix_lhs) {
+      Reference* pseudo_fn     = malloc(sizeof(Reference));
+      pseudo_fn->NodeType      = NODE_REFERENCE;
+      pseudo_fn->ReferenceName = hanging_operator->Str;
+
+      Call* call          = malloc(sizeof(Call));
+      call->NodeType      = NODE_CALL;
+      call->CallFunction  = (Node*)pseudo_fn;
+      call->CallArguments = NULL;
+
+      call->CallArguments = Append(&call->CallArguments, infix_lhs);
+      call->CallArguments = Append(&call->CallArguments, so_far);
+
+      so_far           = (Node*)call;
+      infix_lhs        = NULL;
+      hanging_operator = NULL;
+    }
+
     if (Peek(stream) == delimiter1 || Peek(stream) == delimiter2) {
       return so_far;
     }
 
-    Token* t = Pop(stream);
+    t = Pop(stream);
 
     if (t->TokenType == TOK_ID) {
-      if (so_far == NULL) {
-	Reference* ref     = malloc(sizeof(Reference));
-	ref->NodeType      = NODE_REFERENCE;
-	ref->ReferenceName = t->Str;
-	so_far             = (Node*)ref;
-	continue;
-      } else
-	return NULL;
+      infix_lhs          = so_far;
+      Reference* ref     = malloc(sizeof(Reference));
+      ref->NodeType      = NODE_REFERENCE;
+      ref->ReferenceName = t->Str;
+      so_far             = (Node*)ref;
+      continue;
     }
 
     if (t->TokenType == TOK_NUMBER) {
-      if (so_far == NULL) {
-	Number* num      = malloc(sizeof(Number));
-	num->NodeType    = NODE_NUMBER;
-	num->NumberValue = t->TokenNumber;
-	so_far           = (Node*)num;
-	continue;
-      } else
-	return NULL;
+      infix_lhs        = so_far;
+      Number* num      = malloc(sizeof(Number));
+      num->NodeType    = NODE_NUMBER;
+      num->NumberValue = t->TokenNumber;
+      so_far           = (Node*)num;
+      continue;
     }
 
     if (t->TokenType == '(') {
-      if (so_far) {
+      infix_lhs = so_far;
+      if (!hanging_operator && so_far) {
 	// Function call
 	Call* call         = malloc(sizeof(Call));
 	call->NodeType     = NODE_CALL;
@@ -113,11 +137,23 @@ Node* ParseExpression(Cons** stream, TokenType delimiter1, TokenType delimiter2)
 	}
 
 	so_far = (Node*)call;
+	continue;
       } else {
-	// Infix operator
-	return NULL;
+	so_far = ParseExpression(stream, ')', ')');
+	if (!so_far) return NULL;
+
+	Pop(stream);
+	continue;
       }
     }
+
+    if (IsInfix(t->TokenType)) {
+      hanging_operator = t;
+      continue;
+    }
+
+    fprintf(stderr, "Unexpected token in expression: %ld - '%s'\n", t->TokenType, t->Str);
+    return NULL;
   }
 
   return NULL;
@@ -162,7 +198,7 @@ Return* ParseReturn(Cons** stream) {
 }
 
 If* ParseIf(Cons** stream) {
-  If* if_statement = malloc(sizeof(If));
+  If* if_statement       = malloc(sizeof(If));
   if_statement->NodeType = NODE_IF;
 
   // Parse condition
@@ -170,13 +206,13 @@ If* ParseIf(Cons** stream) {
   if (!if_statement->IfCondition) return NULL;
 
   // Parse then block
-  if_statement->IfThenBlock = ParseBlock(stream); 
+  if_statement->IfThenBlock = ParseBlock(stream);
   if (!if_statement->IfThenBlock) return NULL;
 
   // Parse else block
   if (Peek(stream) == TOK_ELSE) {
     Pop(stream);
-    if_statement->IfElseBlock = ParseBlock(stream); 
+    if_statement->IfElseBlock = ParseBlock(stream);
     if (!if_statement->IfElseBlock) return NULL;
   } else {
     if_statement->IfElseBlock = NULL;
@@ -186,7 +222,7 @@ If* ParseIf(Cons** stream) {
 }
 
 While* ParseWhile(Cons** stream) {
-  While* while_loop = malloc(sizeof(While));
+  While* while_loop    = malloc(sizeof(While));
   while_loop->NodeType = NODE_WHILE;
 
   // Parse condition
@@ -194,7 +230,7 @@ While* ParseWhile(Cons** stream) {
   if (!while_loop->WhileCondition) return NULL;
 
   // Parse then block
-  while_loop->WhileBody = ParseBlock(stream); 
+  while_loop->WhileBody = ParseBlock(stream);
   if (!while_loop->WhileBody) return NULL;
 
   return while_loop;

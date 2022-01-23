@@ -332,16 +332,16 @@ static void CodegenCall(Fn* fn, Call* call, Location* destination) {
   const char* fn_name = ((Reference*)call->CallFunction)->ReferenceName;
 
   /* clang-format off */
-  if (strcmp(fn_name, "add") == 0) { CodegenOperator(fn, call, OP_ADD, destination); return; }
-  if (strcmp(fn_name, "sub") == 0) { CodegenOperator(fn, call, OP_SUB, destination); return; }
-  if (strcmp(fn_name, "band") == 0) { CodegenOperator(fn, call, OP_BAND, destination); return; }
-  if (strcmp(fn_name, "bor") == 0) { CodegenOperator(fn, call, OP_BOR, destination); return; }
-  if (strcmp(fn_name, "gt")  == 0) { CodegenComparisonOperator(fn, call, OP_GT, destination); return; }
-  if (strcmp(fn_name, "lt")  == 0) { CodegenComparisonOperator(fn, call, OP_LT, destination); return; }
-  if (strcmp(fn_name, "gte") == 0) { CodegenComparisonOperator(fn, call, OP_GE, destination); return; }
-  if (strcmp(fn_name, "lte") == 0) { CodegenComparisonOperator(fn, call, OP_LE, destination); return; }
-  if (strcmp(fn_name, "eq")  == 0) { CodegenComparisonOperator(fn, call, OP_EQ, destination); return; }
-  if (strcmp(fn_name, "neq") == 0) { CodegenComparisonOperator(fn, call, OP_NE, destination); return; }
+  if (strcmp(fn_name, "+") == 0) { CodegenOperator(fn, call, OP_ADD, destination); return; }
+  if (strcmp(fn_name, "-") == 0) { CodegenOperator(fn, call, OP_SUB, destination); return; }
+  if (strcmp(fn_name, "&") == 0) { CodegenOperator(fn, call, OP_BAND, destination); return; }
+  if (strcmp(fn_name, "|") == 0) { CodegenOperator(fn, call, OP_BOR, destination); return; }
+  if (strcmp(fn_name, ">")  == 0) { CodegenComparisonOperator(fn, call, OP_GT, destination); return; }
+  if (strcmp(fn_name, "<")  == 0) { CodegenComparisonOperator(fn, call, OP_LT, destination); return; }
+  if (strcmp(fn_name, ">=") == 0) { CodegenComparisonOperator(fn, call, OP_GE, destination); return; }
+  if (strcmp(fn_name, "<=") == 0) { CodegenComparisonOperator(fn, call, OP_LE, destination); return; }
+  if (strcmp(fn_name, "==")  == 0) { CodegenComparisonOperator(fn, call, OP_EQ, destination); return; }
+  if (strcmp(fn_name, "!=") == 0) { CodegenComparisonOperator(fn, call, OP_NE, destination); return; }
   /* clang-format on */
 
   fprintf(stderr, "Undefined function '%s'\n", fn_name);

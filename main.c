@@ -14,19 +14,19 @@ int main(int argc, const char** argv) {
 
   char* file = ReadFile(argv[1]);
   if (!file) {
-    printf("Failed to open file\n");
+    fprintf(stderr, "Failed to open file\n");
     return 1;
   }
 
   Cons* tokens = LexFile(file);
   if (!tokens) {
-    printf("Lex error\n");
+    fprintf(stderr, "Lex error\n");
     return 1;
   }
 
   Cons* nodes = ParseTopLevel(tokens);
   if (!nodes) {
-    printf("Parse error\n");
+    fprintf(stderr, "Parse error\n");
     return 1;
   }
 

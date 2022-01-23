@@ -15,7 +15,7 @@ static void PrintNumber(Number* number, NUM indent) {
 }
 
 static void PrintCall(Call* call, NUM indent) {
-  PrintNode(call->CallFunction, indent);
+  printf("%s", ((Fn*)call->CallFunction)->FnName);
   
   printf("(");
   Cons* arg = call->CallArguments;
