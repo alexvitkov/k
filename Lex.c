@@ -18,6 +18,7 @@ TokenType InferTokenType(char* str) {
   if (strcmp(str, "set") == 0) return TOK_SET;
   if (strcmp(str, "var") == 0) return TOK_VAR;
   if (strcmp(str, "externfn") == 0) return TOK_EXTERNFN;
+  if (strcmp(str, "const") == 0) return TOK_CONST;
   return TOK_ID;
 }
 

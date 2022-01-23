@@ -319,6 +319,24 @@ ExternFn* ParseExternFn(Cons** stream) {
   return efn;
 }
 
+Const* ParseConst(Cons** stream) {
+  Const* constant      = malloc(sizeof(Const));
+  constant->NodeType = NODE_CONST;
+
+  Token* tok = Expect(stream, TOK_ID);
+  if (!tok) return NULL;
+  constant->ConstName = tok->Str;
+
+  if (!Expect(stream, '=')) return NULL;
+
+  Token* num = Expect(stream, TOK_NUMBER);
+  if (!num) return NULL;
+  constant->ConstValue = num->TokenNumber;
+
+  if (!Expect(stream, ';')) return NULL;
+  return constant;
+}
+
 Cons* ParseTopLevel(Cons* tokens) {
   Cons* ast    = NULL;
   Cons* stream = tokens;
@@ -340,6 +358,14 @@ Cons* ParseTopLevel(Cons* tokens) {
 	ExternFn* efn = ParseExternFn(&stream);
 	if (!efn) return NULL;
         ast = Append(&ast, efn);
+	break;
+      }
+
+      case TOK_CONST: {
+	Const* constant = ParseConst(&stream);
+	if (!constant) return NULL;
+	ast = Append(&ast, constant);
+	break;
       }
     }
   }

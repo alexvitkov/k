@@ -468,25 +468,44 @@ static void CodegenCall(Fn* fn, Call* call, Location* destination) {
   return;
 }
 
+static void CodegenNumber(Fn* fn, NUM number, Location* expr_location) {
+  if (expr_location->LocationSpace == LOC_NONE) {
+    expr_location->LocationSpace  = LOC_CONSTANT;
+    expr_location->LocationOffset = number;
+  } else {
+    Location loc = {LOC_CONSTANT, number};
+    Emit(OP_MOV, expr_location, &loc);
+  }
+}
+
 static void CodegenExpression(Fn* fn, Node* expression, Location* expr_location) {
   switch (expression->NodeType) {
     case NODE_NUMBER: {
-      if (expr_location->LocationSpace == LOC_NONE) {
-	expr_location->LocationSpace  = LOC_CONSTANT;
-	expr_location->LocationOffset = ((Number*)expression)->NumberValue;
-      } else {
-	Location loc = { LOC_CONSTANT, ((Number*)expression)->NumberValue };
-	Emit(OP_MOV, expr_location, &loc);
-      }
+      CodegenNumber(fn, ((Number*)expression)->NumberValue, expr_location);
       return;
     }
 
     case NODE_REFERENCE: {
+      const char* name = ((Reference*)expression)->ReferenceName;
+
+      // Check if it's a constant
+      Cons* nodes = CurrentFile;
+      while (nodes) {
+	Node* node = nodes->Value;
+	Const* constant = (Const*)node;
+	if (node->NodeType == NODE_CONST && strcmp(constant->ConstName, name) == 0)  {
+	  CodegenNumber(fn, constant->ConstValue, expr_location);
+	  return;
+	}
+	nodes = nodes->Tail;
+      }
+
+      // Check if it's a varaible
       if (expr_location->LocationSpace == LOC_NONE) {
-	GetVarLocation(fn, ((Reference*)expression)->ReferenceName, expr_location);
+	GetVarLocation(fn, name, expr_location);
       } else {
 	Location loc;
-	GetVarLocation(fn, ((Reference*)expression)->ReferenceName, &loc);
+	GetVarLocation(fn, name, &loc);
 	Emit(OP_MOV, expr_location, &loc);
       }
       return;
@@ -501,8 +520,6 @@ static void CodegenExpression(Fn* fn, Node* expression, Location* expr_location)
   fprintf(stderr, "Not implemented\n");
   exit(1);
 }
-
-
 
 static void CodegenSet(Fn* fn, Set* set) {
   Location var_location;
