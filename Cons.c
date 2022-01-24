@@ -17,3 +17,10 @@ Cons* Append(Cons** list, void* value) {
 
   return *list;
 }
+
+NUM Length(Cons* list) {
+  if (!list)
+    return 0;
+  else
+    return 1 + Length(list->Tail);
+}

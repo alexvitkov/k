@@ -65,11 +65,11 @@ const char* RegisterNames8[] = {
 /* clang-format on */
 
 enum LocationSpace {
-  LOC_NONE,
-  LOC_REGISTER,
-  LOC_RBP_RELATIVE,
-  LOC_CONSTANT,
-  LOC_STRING,
+  LOC_NONE = 0,
+  LOC_REGISTER = 1,
+  LOC_RBP_RELATIVE = 2,
+  LOC_CONSTANT = 3,
+  LOC_STRING = 4,
 };
 typedef NUM LocationSpace;
 
@@ -82,7 +82,7 @@ static Location ReturnLocation = { LOC_REGISTER, REG_RAX };
 static Location ZeroLocation = { LOC_CONSTANT, 0 };
 static Location TempRegister = { LOC_REGISTER, REG_R11 };
 
-static Location ArgumentLocations[] = {
+static Location ArgumentLocationsReg[] = {
   { LOC_REGISTER, REG_RDI },
   { LOC_REGISTER, REG_RSI },
   { LOC_REGISTER, REG_RDX },
@@ -154,7 +154,7 @@ static void PrintLocationByte(Location* loc) {
 }
 
 static NUM GetStackFrameSize(Fn* fn) {
-  NUM size = 0;
+  NUM size = Length(fn->FnParamNames) * NUM_SIZE;
 
   Cons* statement_list = fn->FnBlock->BlockStatements;
   while (statement_list) {
@@ -176,8 +176,8 @@ static void GetVarLocation(Fn* fn, const char* var_name, Location* out) {
   while (argument_list) {
     char* arg_name = argument_list->Value;
     if (strcmp(arg_name, var_name) == 0) {
-      out->LocationSpace = ArgumentLocations[argument_index].LocationSpace;
-      out->LocationOffset = ArgumentLocations[argument_index].LocationOffset;
+      out->LocationSpace = LOC_RBP_RELATIVE;
+      out->LocationOffset = -(argument_index + 1) * NUM_SIZE;
       return;
     }
     argument_index++;
@@ -195,7 +195,7 @@ static void GetVarLocation(Fn* fn, const char* var_name, Location* out) {
       const char* other_name = ((Var*)statement)->VarName;
       if (strcmp(other_name, var_name) == 0) {
 	out->LocationSpace  = LOC_RBP_RELATIVE;
-	out->LocationOffset = - (local_index + 1) * NUM_SIZE;
+	out->LocationOffset = -(Length(fn->FnParamNames) + local_index + 1) * NUM_SIZE;
         return;
       }
       local_index ++;
@@ -211,6 +211,11 @@ static void AcquireTemp(Location* out) {
   CurrentStackOffset -= NUM_SIZE;
   out->LocationSpace = LOC_RBP_RELATIVE;
   out->LocationOffset = CurrentStackOffset;
+
+  if (CurrentStackOffset < -990) {
+    fprintf(stderr, "Function blew up the stack frame\n");
+    exit(1);
+  }
 }
 
 static void CodegenExpression(Fn* fn, Node* expression, Location* expr_location);
@@ -282,20 +287,6 @@ static void Pop(Location* loc) {
   PrintLocation(loc);
 }
 
-static void PushArgs() {
-  Push(&ReturnLocation);
-  for (NUM i = 0; i < 6; i++) {
-    Push(&ArgumentLocations[i]);
-  }
-}
-
-static void PopArgs() {
-  for (NUM i = 5; i >= 0; i--) {
-    Pop(&ArgumentLocations[i]);
-  }
-  Pop(&ReturnLocation);
-}
-
 static void EmitMul(Location* dst, Location* lhs, Location* rhs) {
   Location RDX = { LOC_REGISTER, REG_RAX };
   Location RAX = { LOC_REGISTER, REG_RAX };
@@ -339,7 +330,7 @@ static void EmitJump(Operator jumpType, NUM label) {
   printf("_label%ld", label);
 }
 
-static void EmitRet() {
+static void EmitRet(Fn* fn) {
   NewLine();
   printf("ADD rsp, 1000");
   NewLine();
@@ -430,7 +421,7 @@ static BOOL IsPLT(const char* name) {
 }
 
 static void CodegenArrow(Fn* fn, Call* call, Location* destination) {
-  BOOL allocated_temp = TRUE;
+  BOOL allocated_temp = destination->LocationSpace == LOC_NONE;
   if (allocated_temp) AcquireTemp(destination);
 
   CodegenOperator(fn, call, OP_ADD, &TempRegister);
@@ -466,12 +457,10 @@ static void CodegenCall(Fn* fn, Call* call, Location* destination) {
   BOOL allocated_temp = destination->LocationSpace == LOC_NONE;
   if (allocated_temp) AcquireTemp(destination);
 
-  PushArgs();
-
   NUM argument_index = 0;
   Cons* arg = call->CallArguments;
   while (arg) {
-    CodegenExpression(fn, arg->Value, &ArgumentLocations[argument_index]);
+    CodegenExpression(fn, arg->Value, &ArgumentLocationsReg[argument_index]);
     arg = arg->Tail;
     argument_index++;
   }
@@ -483,7 +472,6 @@ static void CodegenCall(Fn* fn, Call* call, Location* destination) {
     printf(" WRT ..plt");
 
   Emit(OP_MOV, &TempRegister, &ReturnLocation);
-  PopArgs();
   Emit(OP_MOV, destination, &TempRegister);
 
   return;
@@ -549,7 +537,7 @@ static void CodegenExpression(Fn* fn, Node* expression, Location* expr_location)
     }
   }
 
-  fprintf(stderr, "Not implemented\n");
+  fprintf(stderr, "Expression Type Not implemented\n");
   exit(1);
 }
 
@@ -563,8 +551,7 @@ static void CodegenReturn(Fn* fn, Return* ret) {
   if (ret->ReturnValue) {
     CodegenExpression(fn, ret->ReturnValue, &ReturnLocation);
   }
-  NewLine();
-  EmitRet();
+  EmitRet(fn);
 }
 
 static void CodegenIf(Fn* fn, If* if_statement) {
@@ -630,13 +617,19 @@ static void CodegenFn(Fn* fn) {
   printf("PUSH rbp");
   NewLine();
   printf("MOV rbp, rsp");
-  NewLine();
+
+  NUM argc = Length(fn->FnParamNames);
+
+  for (int i = 0; i < argc; i++)
+    Push(&ArgumentLocationsReg[i]);
+
   CurrentStackOffset = -GetStackFrameSize(fn);
-  printf("SUB rsp, 1000");
+  NewLine();
+  printf("SUB rsp, %ld", 1000 - argc * NUM_SIZE);
 
   CodegenBlock(fn, fn->FnBlock);
 
-  EmitRet();
+  EmitRet(fn);
 
   printf("\n\n");
 }

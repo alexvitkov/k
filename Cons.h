@@ -1,4 +1,5 @@
 #pragma once
+#include "Common.h"
 
 typedef struct Cons {
   void* Value;
@@ -6,5 +7,5 @@ typedef struct Cons {
 } Cons;
 
 
-Cons* Tail(Cons* list);
 Cons* Append(Cons** list, void* value);
+NUM Length(Cons* list);
