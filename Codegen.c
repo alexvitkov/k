@@ -389,20 +389,34 @@ static void CodegenComparisonOperator(Fn* fn, Call* call, Operator op, Location*
   }
 }
 
-static void CodegenGet8(Fn* fn, Call* call, Location* destination) {
+static void DereferenceR11(Location* destination, BOOL byte) {
+  Emit(OP_MOV, destination, &ZeroLocation);
+
+  if (byte) {
+    NewLine();
+    printf("MOV r11b, [r11]");
+
+    NewLine();
+    printf("MOV ");
+    PrintLocationByte(destination);
+    printf(", r11b");
+  } else {
+    NewLine();
+    printf("MOV r11, [r11]");
+
+    NewLine();
+    printf("MOV ");
+    PrintLocation(destination);
+    printf(", r11");
+  }
+}
+
+static void CodegenGet(Fn* fn, Call* call, Location* destination, BOOL byte) {
   BOOL allocated_temp = destination->LocationSpace == LOC_NONE;
   if (allocated_temp) AcquireTemp(destination);
 
   CodegenExpression(fn, call->CallArguments->Value, &TempRegister);
-  Emit(OP_MOV, destination, &ZeroLocation);
-
-  NewLine();
-  printf("MOV r11b, [R11]");
-  
-  NewLine();
-  printf("MOV ");
-  PrintLocationByte(destination);
-  printf(", r11b");
+  DereferenceR11(destination, byte);
 }
 
 static BOOL IsPLT(const char* name) {
@@ -413,6 +427,14 @@ static BOOL IsPLT(const char* name) {
     nodes = nodes->Tail;
   }
   return FALSE;
+}
+
+static void CodegenArrow(Fn* fn, Call* call, Location* destination) {
+  BOOL allocated_temp = TRUE;
+  if (allocated_temp) AcquireTemp(destination);
+
+  CodegenOperator(fn, call, OP_ADD, &TempRegister);
+  DereferenceR11(destination, FALSE);
 }
 
 static void CodegenCall(Fn* fn, Call* call, Location* destination) {
@@ -436,12 +458,10 @@ static void CodegenCall(Fn* fn, Call* call, Location* destination) {
   if (strcmp(fn_name, "==")  == 0) { CodegenComparisonOperator(fn, call, OP_EQ, destination); return; }
   if (strcmp(fn_name, "!=") == 0) { CodegenComparisonOperator(fn, call, OP_NE, destination); return; }
   if (strcmp(fn_name, "*") == 0)  { CodegenComparisonOperator(fn, call, OP_MUL, destination); return; }
+  if (strcmp(fn_name, "->") == 0)  { CodegenArrow(fn, call, destination); return; }
+  if (strcmp(fn_name, "get") == 0) { CodegenGet(fn, call, destination, FALSE); return; }
+  if (strcmp(fn_name, "get8") == 0) { CodegenGet(fn, call, destination, TRUE); return; }
   /* clang-format on */
-
-  if (strcmp(fn_name, "get8") == 0) {
-    CodegenGet8(fn, call, destination);
-    return;
-  }
 
   BOOL allocated_temp = destination->LocationSpace == LOC_NONE;
   if (allocated_temp) AcquireTemp(destination);

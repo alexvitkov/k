@@ -18,6 +18,7 @@ enum TokenTypeEnum {
   TOK_LESS_THAN_EQUAL = 205,
   TOK_DOUBLE_AND = 206,
   TOK_DOUBLE_OR = 207,
+  TOK_ARROW = 208,
 
   // keywords
   TOK_CONST = 1000,

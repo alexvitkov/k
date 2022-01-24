@@ -13,6 +13,7 @@ const TOK_GREATER_THAN_EQUAL = 204;
 const TOK_LESS_THAN_EQUAL = 205;
 const TOK_DOUBLE_AND = 206;
 const TOK_DOUBLE_OR = 207;
+const TOK_ARROW = 208;
 
 // keywords
 const TOK_CONST = 1000;
@@ -24,3 +25,9 @@ const TOK_RETURN = 1005;
 const TOK_VAR = 1006;
 const TOK_SET = 1007;
 const TOK_EXTERNFN = 1008;
+
+// Token struct
+const TokenType = 0;
+const TokenString = 8;
+const TokenTokenNumber = 16;
+const Sizeof_Token = 24;

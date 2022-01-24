@@ -61,7 +61,7 @@ BOOL IsInfix(TokenType tt) {
   return tt == '&' || tt == '|' || tt == '+' || tt == '-' || tt == '*' || tt == '/' || tt == '<' || tt == '>'
       || tt == TOK_DOUBLE_EQUAL || tt == TOK_NOT_EQUAL || tt == TOK_GREATER_THAN || tt == TOK_LESS_THAN
       || tt == TOK_GREATER_THAN_EQUAL || tt == TOK_LESS_THAN_EQUAL || tt == TOK_DOUBLE_AND
-      || tt == TOK_DOUBLE_OR;
+      || tt == TOK_DOUBLE_OR || tt == TOK_ARROW;
 }
 
 Node* ParseExpression(Cons** stream, TokenType delimiter1, TokenType delimiter2) {

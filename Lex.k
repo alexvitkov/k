@@ -65,6 +65,7 @@ fn GetTwoCharOperator(c1, c2) {
   if (c1 == '|') & (c2 == '|') { return TOK_DOUBLE_OR; }
   if (c1 == '>') & (c2 == '=') { return TOK_GREATER_THAN_EQUAL; }
   if (c1 == '<') & (c2 == '=') { return TOK_LESS_THAN_EQUAL; }
+  if (c1 == '-') & (c2 == '>') { return TOK_ARROW; }
   return TOK_NONE;
 }
 
