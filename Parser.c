@@ -48,7 +48,7 @@ Token* Expect1(Cons** tokens, TokenType tt) {
 
 Node* ParseExpression(Cons** stream, TokenType delimiter1, TokenType delimiter2);
 Block* ParseBlock(Cons** stream);
-Var* ParseVar(Cons** stream);
+Var* ParseVar(Cons** stream, BOOL is_static);
 Set* ParseSet(Cons** stream);
 Return* ParseReturn(Cons** stream);
 Node* ParseStatement(Cons** stream);
@@ -172,7 +172,7 @@ Node* ParseExpression(Cons** stream, TokenType delimiter1, TokenType delimiter2)
   return NULL;
 }
 
-Var* ParseVar(Cons** stream) {
+Var* ParseVar(Cons** stream, BOOL is_static) {
   Var* var      = malloc(sizeof(Var));
   var->NodeType = NODE_VAR;
 
@@ -253,7 +253,7 @@ Node* ParseStatement(Cons** stream) {
   Token* tok = Pop(stream);
   if (!tok) return NULL;
 
-  if (tok->TokenType == TOK_VAR) return (Node*)ParseVar(stream);
+  if (tok->TokenType == TOK_VAR) return (Node*)ParseVar(stream, FALSE);
   if (tok->TokenType == TOK_SET) return (Node*)ParseSet(stream);
   if (tok->TokenType == TOK_RETURN) return (Node*)ParseReturn(stream);
   if (tok->TokenType == TOK_IF) return (Node*)ParseIf(stream);
@@ -370,6 +370,12 @@ BOOL ParseFile(Cons* tokens) {
       case TOK_CONST: {
 	if (!ParseConst(&stream)) return FALSE;
 	break;
+      }
+
+      case TOK_STATIC: {
+	Var* var = ParseVar(&stream, TRUE);
+	if (!var) return FALSE;
+	StaticVariables = Append(&StaticVariables, var);
       }
     }
   }

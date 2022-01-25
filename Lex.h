@@ -30,6 +30,7 @@ enum TokenTypeEnum {
   TOK_VAR = 1006,
   TOK_SET = 1007,
   TOK_EXTERNFN = 1008,
+  TOK_STATIC = 1009,
 
   // pseudo tokens
   TOK_INFER_KEYWORD_OR_IDENTIFIER = 2000,

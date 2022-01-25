@@ -25,6 +25,7 @@ const TOK_RETURN = 1005;
 const TOK_VAR = 1006;
 const TOK_SET = 1007;
 const TOK_EXTERNFN = 1008;
+const TOK_STATIC = 1009;
 
 // Token struct
 const TokenType = 0;

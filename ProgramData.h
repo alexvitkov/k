@@ -12,3 +12,4 @@ extern Cons* Strings;
 extern Cons* ExternFunctions;
 extern Cons* Functions;
 extern Cons* Consts;
+extern Cons* StaticVariables;

@@ -55,6 +55,7 @@ fn InferTokenType(str) {
   if (strcmp(str, "var")) == 0 { return TOK_VAR; }
   if (strcmp(str, "externfn")) == 0 { return TOK_EXTERNFN; }
   if (strcmp(str, "const")) == 0 { return TOK_CONST; }
+  if (strcmp(str, "static")) == 0 { return TOK_STATIC; }
   return TOK_ID;
 }
 

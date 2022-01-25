@@ -24,3 +24,10 @@ NUM Length(Cons* list) {
   else
     return 1 + Length(list->Tail);
 }
+
+void* Nth(Cons* list, NUM n) {
+  if (n == 0)
+    return list->Value;
+  else
+    return Nth(list->Tail, n - 1);
+}

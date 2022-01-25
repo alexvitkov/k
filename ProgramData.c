@@ -5,3 +5,4 @@ Cons* Strings = NULL;
 Cons* ExternFunctions = NULL;
 Cons* Functions = NULL;
 Cons* Consts = NULL;
+Cons* StaticVariables = NULL;

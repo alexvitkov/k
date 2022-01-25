@@ -70,6 +70,7 @@ enum LocationSpace {
   LOC_RBP_RELATIVE = 2,
   LOC_CONSTANT = 3,
   LOC_STRING = 4,
+  LOC_STATIC = 5,
 };
 typedef NUM LocationSpace;
 
@@ -125,6 +126,11 @@ static void PrintLocation(Location* loc) {
     }
     case LOC_STRING: {
       printf("_string%ld", loc->LocationOffset);
+      return;
+    }
+    case LOC_STATIC: {
+      Var* var = Nth(StaticVariables, loc->LocationOffset);
+      printf("QWORD [%s]", var->VarName);
       return;
     }
     case LOC_NONE: {
@@ -202,6 +208,20 @@ static void GetVarLocation(Fn* fn, const char* var_name, Location* out) {
     }
   }
 
+  // Check if it's a static
+  Cons* statics = StaticVariables;
+  NUM static_index = 0;
+  while (statics) {
+    Var* var = statics->Value;
+    if (strcmp(var->VarName, var_name) == 0) {
+      out->LocationSpace = LOC_STATIC;
+      out->LocationOffset = static_index;
+      return;
+    }
+    statics = statics->Tail;
+    static_index++;
+  }
+
   // error
   fprintf(stderr, "Invalid variable %s\n", var_name);
   exit(1);
@@ -220,11 +240,15 @@ static void AcquireTemp(Location* out) {
 
 static void CodegenExpression(Fn* fn, Node* expression, Location* expr_location);
 
+static BOOL IsMemoryLocation(NUM loc) {
+  return loc == LOC_RBP_RELATIVE || loc == LOC_STATIC || loc == LOC_STRING;
+}
+
 static void Emit(Operator op, Location* dst, Location* src) {
   Location* src1 = src;
   Location* dst1 = dst;
 
-  if (src->LocationSpace == LOC_RBP_RELATIVE && dst->LocationSpace == LOC_RBP_RELATIVE) {
+  if (IsMemoryLocation(src->LocationSpace) && IsMemoryLocation(dst->LocationSpace)) {
     NewLine();
     printf("MOV ");
     src1 = &TempRegister;
@@ -635,13 +659,24 @@ static void CodegenFn(Fn* fn) {
 }
 
 void GlobalCodegen() {
+  // Extern functions
   Cons* efn = ExternFunctions;
   while (efn) {
     printf("extern %s\n", (const char*)efn->Value);
     efn = efn->Tail;
   }
 
-  printf(".data:\n");
+  // Uninitialized static variables
+  printf("segment .bss\n");
+  Cons* statics = StaticVariables;
+  while (statics) {
+    Var* stat = statics->Value;
+    printf("%s: resq 1\n", stat->VarName);
+    statics = statics->Tail;
+  }
+
+  // Strings
+  printf("segment .rodata\n");
   Cons* strings = Strings;
   NUM str_index = 0;
   while (strings) {
@@ -654,7 +689,7 @@ void GlobalCodegen() {
     printf("_string%ld: db \"%s\", 0\n", str->StringLabel, str->StringStr);
   }
 
-  printf(".text:\n");
+  printf("segment .text\n");
   Cons* fn = Functions;
   while (fn) {
     CodegenFn((Fn*)fn->Value);
