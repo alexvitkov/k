@@ -1,50 +1,9 @@
 #include "ProgramData.h"
 #include "Cons.h"
-#include "Lex.h"
+#include "Token.h"
 #include "Node.h"
 #include <string.h>
 
-//#define DEBUG_TOKENS
-
-Token* Pop1(Cons** tokens) {
-  if (!(*tokens)) return NULL;
-
-  Token* tok = (*tokens)->Value;
-  *tokens    = (*tokens)->Tail;
-
-  return tok;
-}
-
-TokenType Peek(Cons** tokens) {
-  if (!(*tokens)) return TOK_NONE;
-  Token* t = (*tokens)->Value;
-  return t->TokenType;
-}
-
-Token* Expect1(Cons** tokens, TokenType tt) {
-  Token* t = Pop1(tokens);
-  if (!t || t->TokenType != tt) return NULL;
-  return t;
-}
-
-#ifdef DEBUG_TOKENS
-#define Pop(tokens)                                                                                          \
-  ({                                                                                                         \
-    Token* tok = Pop1(tokens);                                                                               \
-    printf("Line %4d: Pop %s\n", __LINE__, tok->Str);                                                        \
-    tok;                                                                                                     \
-  })
-
-#define Expect(tokens, b)                                                                                    \
-  ({                                                                                                         \
-    Token* tok = Expect1(tokens, b);                                                                         \
-    printf("Line %4d: Expect %s\n", __LINE__, tok->Str);                                                     \
-    tok;                                                                                                     \
-  })
-#else
-#define Pop Pop1
-#define Expect Expect1
-#endif
 
 Node* ParseExpression(Cons** stream, TokenType delimiter1, TokenType delimiter2);
 Block* ParseBlock(Cons** stream);

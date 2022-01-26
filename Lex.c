@@ -1,5 +1,5 @@
-#include "Lex.h"
 #include "Common.h"
+#include "Token.h"
 #include "Cons.h"
 #include <stdlib.h>
 #include <string.h>
@@ -178,3 +178,4 @@ Cons* LexFile(char* file) {
 
   return list;
 }
+

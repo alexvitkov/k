@@ -1,6 +1,6 @@
 #include "Common.h"
 #include "Cons.h"
-#include "Lex.h"
+#include "Token.h"
 #include "Node.h"
 #include "Util.h"
 #include "ProgramData.h"

@@ -97,8 +97,8 @@ static void CodegenBlock(Fn* fn, Block* block);
 static void PrintLocation(Location* loc);
 static void PrintLocationByte(Location* loc);
 static NUM GetStackFrameSize(Fn* fn);
-static void Push(Location* loc);
-static void Pop(Location* loc);
+static void EmitPush(Location* loc);
+static void EmitPop(Location* loc);
 
 static void NewLine() {
   printf("\n    ");
@@ -299,13 +299,13 @@ static void EmitSet(Operator op, Location* dst, Location* lhs, Location* rhs) {
   PrintLocationByte(dst);
 }
 
-static void Push(Location* loc) {
+static void EmitPush(Location* loc) {
   NewLine();
   printf("PUSH ");
   PrintLocation(loc);
 }
 
-static void Pop(Location* loc) {
+static void EmitPop(Location* loc) {
   NewLine();
   printf("POP ");
   PrintLocation(loc);
@@ -315,8 +315,8 @@ static void EmitMul(Location* dst, Location* lhs, Location* rhs) {
   Location RDX = { LOC_REGISTER, REG_RAX };
   Location RAX = { LOC_REGISTER, REG_RAX };
 
-  Push(&RDX);
-  Push(&RAX);
+  EmitPush(&RDX);
+  EmitPush(&RAX);
   Emit(OP_MOV, &RAX, lhs);
 
 
@@ -332,8 +332,8 @@ static void EmitMul(Location* dst, Location* lhs, Location* rhs) {
 
   Emit(OP_MOV, dst, &RAX);
 
-  Pop(&RAX);
-  Pop(&RDX);
+  EmitPop(&RAX);
+  EmitPop(&RDX);
 }
 
 static NUM GetLabel() {
@@ -645,7 +645,7 @@ static void CodegenFn(Fn* fn) {
   NUM argc = Length(fn->FnParamNames);
 
   for (int i = 0; i < argc; i++)
-    Push(&ArgumentLocationsReg[i]);
+    EmitPush(&ArgumentLocationsReg[i]);
 
   CurrentStackOffset = -GetStackFrameSize(fn);
   NewLine();

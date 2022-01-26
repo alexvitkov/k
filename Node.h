@@ -1,7 +1,7 @@
 #pragma once
 #include "Common.h"
 #include "Cons.h"
-#include "Lex.h"
+#include "Token.h"
 
 enum NodeTypeEnum {
   NODE_NONE = 0,
