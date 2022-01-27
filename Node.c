@@ -52,7 +52,9 @@ static void PrintReference(Reference* ref, NUM indent) {
 }
 
 static void PrintSet(Set* set, NUM indent) {
-  printf("set %s = ", set->SetName);
+  printf("set ");
+  PrintNode(set->SetDestination, indent);
+  printf(" = ");
   PrintNode(set->SetValue, indent);
   printf(";");
 }

@@ -54,7 +54,7 @@ typedef struct Var {
 
 typedef struct Set {
   NodeType NodeType; // NODE_SET
-  const char* SetName;
+  Node* SetDestination;
   Node* SetValue;
 } Set;
 

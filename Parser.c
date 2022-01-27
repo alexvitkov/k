@@ -1,4 +1,5 @@
 #include "ProgramData.h"
+
 #include "Cons.h"
 #include "Token.h"
 #include "Node.h"
@@ -147,9 +148,8 @@ Set* ParseSet(Cons** stream) {
   Set* set      = malloc(sizeof(Set));
   set->NodeType = NODE_SET;
 
-  Token* tok = Expect(stream, TOK_ID);
-  if (!tok) return NULL;
-  set->SetName = tok->Str;
+  set->SetDestination = ParseExpression(stream, '=', '=');
+  if (!set->SetDestination) return NULL;
 
   if (!Expect(stream, '=')) return NULL;
 

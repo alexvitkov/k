@@ -27,6 +27,7 @@ typedef NUM Register;
 enum OperatorEnum {
   OP_NONE,
   OP_MOV,
+  OP_LEA,
   OP_TEST,
   OP_CMP,
   OP_ADD,
@@ -99,6 +100,8 @@ static void PrintLocationByte(Location* loc);
 static NUM GetStackFrameSize(Fn* fn);
 static void EmitPush(Location* loc);
 static void EmitPop(Location* loc);
+static void AcquireTemp(Location* out);
+static void Emit(Operator op, Location* dst, Location* src);
 
 static void NewLine() {
   printf("\n    ");
@@ -133,8 +136,8 @@ static void PrintLocation(Location* loc) {
       printf("QWORD [%s]", var->VarName);
       return;
     }
-    case LOC_NONE: {
-      printf("<<<<<NONE>>>>>");
+    default: {
+      printf("<<<<<%ld>>>>>", loc->LocationSpace);
       return;
     }
   }
@@ -174,7 +177,19 @@ static NUM GetStackFrameSize(Fn* fn) {
   return size;
 }
 
-static void GetVarLocation(Fn* fn, const char* var_name, Location* out) {
+static void AddressOfRBPRelative(Location* rbp_rel, Location* out) {
+  if (rbp_rel->LocationSpace != LOC_RBP_RELATIVE) {
+    fprintf(stderr, "Invalid AddressOfRBPRelative\n");
+    exit(1);
+  }
+  BOOL allocated_temp = out->LocationSpace == LOC_NONE;
+  if (allocated_temp) AcquireTemp(out);
+
+  Emit(OP_LEA, &TempRegister, rbp_rel);
+  Emit(OP_MOV, out, &TempRegister);
+}
+
+static void GetVarLocation(Fn* fn, const char* var_name, Location* out, BOOL is_lvalue) {
   // Check if it's a parameter
   NUM argument_index = 0;
 
@@ -182,8 +197,16 @@ static void GetVarLocation(Fn* fn, const char* var_name, Location* out) {
   while (argument_list) {
     char* arg_name = argument_list->Value;
     if (strcmp(arg_name, var_name) == 0) {
-      out->LocationSpace = LOC_RBP_RELATIVE;
-      out->LocationOffset = -(argument_index + 1) * NUM_SIZE;
+      Location loc;
+      loc.LocationSpace = LOC_RBP_RELATIVE;
+      loc.LocationOffset = -(argument_index + 1) * NUM_SIZE;
+
+      if (is_lvalue) {
+	AddressOfRBPRelative(&loc, out);
+      } else {
+	out->LocationSpace  = loc.LocationSpace;
+	out->LocationOffset = loc.LocationOffset;
+      }
       return;
     }
     argument_index++;
@@ -200,8 +223,16 @@ static void GetVarLocation(Fn* fn, const char* var_name, Location* out) {
     if (statement->NodeType == NODE_VAR) {
       const char* other_name = ((Var*)statement)->VarName;
       if (strcmp(other_name, var_name) == 0) {
-	out->LocationSpace  = LOC_RBP_RELATIVE;
-	out->LocationOffset = -(Length(fn->FnParamNames) + local_index + 1) * NUM_SIZE;
+	Location loc;
+	loc.LocationSpace  = LOC_RBP_RELATIVE;
+	loc.LocationOffset = -(Length(fn->FnParamNames) + local_index + 1) * NUM_SIZE;
+
+	if (is_lvalue) {
+	  AddressOfRBPRelative(&loc, out);
+	} else {
+	  out->LocationSpace = loc.LocationSpace;
+	  out->LocationOffset = loc.LocationOffset;
+	}
         return;
       }
       local_index ++;
@@ -238,7 +269,7 @@ static void AcquireTemp(Location* out) {
   }
 }
 
-static void CodegenExpression(Fn* fn, Node* expression, Location* expr_location);
+static void CodegenExpression(Fn* fn, Node* expression, Location* expr_location, BOOL is_lvalue);
 
 static BOOL IsMemoryLocation(NUM loc) {
   return loc == LOC_RBP_RELATIVE || loc == LOC_STATIC || loc == LOC_STRING;
@@ -269,6 +300,7 @@ static void Emit(Operator op, Location* dst, Location* src) {
   NewLine();
   switch (op) {
   case OP_MOV: printf("MOV "); break;
+  case OP_LEA: printf("LEA "); break;
   case OP_ADD: printf("ADD "); break;
   case OP_SUB: printf("SUB "); break;
   case OP_BAND: printf("AND "); break;
@@ -369,13 +401,13 @@ static void CodegenOperator(Fn* fn, Call* call, Operator op, Location* destinati
 
   Cons* args = call->CallArguments;
 
-  CodegenExpression(fn, args->Value, destination);
+  CodegenExpression(fn, args->Value, destination, FALSE);
   args = args->Tail;
 
   while (args) {
     Node* arg_expression = args->Value;
     Location arg_location = { LOC_NONE };
-    CodegenExpression(fn, arg_expression, &arg_location);
+    CodegenExpression(fn, arg_expression, &arg_location, FALSE);
     Emit(op, destination, &arg_location);
 
     args = args->Tail;
@@ -391,10 +423,10 @@ static void CodegenComparisonOperator(Fn* fn, Call* call, Operator op, Location*
   Location rhs_location = { LOC_NONE };
 
   Cons* args = call->CallArguments;
-  CodegenExpression(fn, args->Value, &lhs_location);
+  CodegenExpression(fn, args->Value, &lhs_location, FALSE);
 
   args = args->Tail;
-  CodegenExpression(fn, args->Value, &rhs_location);
+  CodegenExpression(fn, args->Value, &rhs_location, FALSE);
 
   if (op == OP_MUL) {
     EmitMul(destination, &lhs_location, &rhs_location);
@@ -430,7 +462,7 @@ static void CodegenGet(Fn* fn, Call* call, Location* destination, BOOL byte) {
   BOOL allocated_temp = destination->LocationSpace == LOC_NONE;
   if (allocated_temp) AcquireTemp(destination);
 
-  CodegenExpression(fn, call->CallArguments->Value, &TempRegister);
+  CodegenExpression(fn, call->CallArguments->Value, &TempRegister, FALSE);
   DereferenceR11(destination, byte);
 }
 
@@ -444,15 +476,25 @@ static BOOL IsPLT(const char* name) {
   return FALSE;
 }
 
-static void CodegenArrow(Fn* fn, Call* call, Location* destination) {
-  BOOL allocated_temp = destination->LocationSpace == LOC_NONE;
-  if (allocated_temp) AcquireTemp(destination);
+static void CodegenArrow(Fn* fn, Call* call, Location* destination, BOOL is_lvalue) {
 
-  CodegenOperator(fn, call, OP_ADD, &TempRegister);
-  DereferenceR11(destination, FALSE);
+  Location rhs_loc = { LOC_NONE };
+  Node* lhs = call->CallArguments->Value;
+  Node* rhs = call->CallArguments->Tail->Value;
+
+  CodegenExpression(fn, lhs, destination, FALSE);
+  CodegenExpression(fn, rhs, &rhs_loc, FALSE);
+
+  if (is_lvalue) {
+    Emit(OP_ADD, destination, &rhs_loc);
+  }
+  else {
+    Emit(OP_MOV, &TempRegister, destination);
+    DereferenceR11(destination, FALSE);
+  }
 }
 
-static void CodegenCall(Fn* fn, Call* call, Location* destination) {
+  static void CodegenCall(Fn* fn, Call* call, Location* destination, BOOL is_lvalue) {
   if (call->CallFunction->NodeType != NODE_REFERENCE) {
     fprintf(stderr, "Invalid function call\n");
     exit(1);
@@ -473,7 +515,7 @@ static void CodegenCall(Fn* fn, Call* call, Location* destination) {
   if (strcmp(fn_name, "==")  == 0) { CodegenComparisonOperator(fn, call, OP_EQ, destination); return; }
   if (strcmp(fn_name, "!=") == 0) { CodegenComparisonOperator(fn, call, OP_NE, destination); return; }
   if (strcmp(fn_name, "*") == 0)  { CodegenComparisonOperator(fn, call, OP_MUL, destination); return; }
-  if (strcmp(fn_name, "->") == 0)  { CodegenArrow(fn, call, destination); return; }
+  if (strcmp(fn_name, "->") == 0)  { CodegenArrow(fn, call, destination, is_lvalue); return; }
   if (strcmp(fn_name, "get") == 0) { CodegenGet(fn, call, destination, FALSE); return; }
   if (strcmp(fn_name, "get8") == 0) { CodegenGet(fn, call, destination, TRUE); return; }
   /* clang-format on */
@@ -484,7 +526,7 @@ static void CodegenCall(Fn* fn, Call* call, Location* destination) {
   NUM argument_index = 0;
   Cons* arg = call->CallArguments;
   while (arg) {
-    CodegenExpression(fn, arg->Value, &ArgumentLocationsReg[argument_index]);
+    CodegenExpression(fn, arg->Value, &ArgumentLocationsReg[argument_index], FALSE);
     arg = arg->Tail;
     argument_index++;
   }
@@ -511,7 +553,7 @@ static void CodegenNumber(Fn* fn, NUM number, Location* expr_location) {
   }
 }
 
-static void CodegenExpression(Fn* fn, Node* expression, Location* expr_location) {
+static void CodegenExpression(Fn* fn, Node* expression, Location* expr_location, BOOL is_lvalue) {
   switch (expression->NodeType) {
     case NODE_NUMBER: {
       CodegenNumber(fn, ((Number*)expression)->NumberValue, expr_location);
@@ -546,17 +588,17 @@ static void CodegenExpression(Fn* fn, Node* expression, Location* expr_location)
 
       // Check if it's a varaible
       if (expr_location->LocationSpace == LOC_NONE) {
-	GetVarLocation(fn, name, expr_location);
+	GetVarLocation(fn, name, expr_location, is_lvalue);
       } else {
 	Location loc;
-	GetVarLocation(fn, name, &loc);
+	GetVarLocation(fn, name, &loc, is_lvalue);
 	Emit(OP_MOV, expr_location, &loc);
       }
       return;
     }
 
     case NODE_CALL: {
-      CodegenCall(fn, (Call*)expression, expr_location);
+      CodegenCall(fn, (Call*)expression, expr_location, is_lvalue);
       return;
     }
   }
@@ -566,14 +608,25 @@ static void CodegenExpression(Fn* fn, Node* expression, Location* expr_location)
 }
 
 static void CodegenSet(Fn* fn, Set* set) {
-  Location var_location;
-  GetVarLocation(fn, set->SetName, &var_location);
-  CodegenExpression(fn, set->SetValue, &var_location);
+  Location dst_location = { LOC_NONE };
+  CodegenExpression(fn, set->SetDestination, &dst_location, TRUE);
+
+  Location src_location = { LOC_NONE };
+  CodegenExpression(fn, set->SetValue, &src_location, FALSE);
+
+
+  NewLine();
+  printf("MOV QWORD r12, ");
+  PrintLocation(&src_location);
+
+  Emit(OP_MOV, &TempRegister, &dst_location);
+  NewLine();
+  printf("MOV QWORD [r11], r12");
 }
 
 static void CodegenReturn(Fn* fn, Return* ret) {
   if (ret->ReturnValue) {
-    CodegenExpression(fn, ret->ReturnValue, &ReturnLocation);
+    CodegenExpression(fn, ret->ReturnValue, &ReturnLocation, FALSE);
   }
   EmitRet(fn);
 }
@@ -583,7 +636,7 @@ static void CodegenIf(Fn* fn, If* if_statement) {
   NUM end_label = GetLabel();
 
   Location condition = { LOC_NONE };
-  CodegenExpression(fn, if_statement->IfCondition, &condition);
+  CodegenExpression(fn, if_statement->IfCondition, &condition, FALSE);
 
   Emit(OP_TEST, &condition, &condition);
   EmitJump(OP_JZ, else_label);
@@ -604,7 +657,7 @@ static void CodegenWhile(Fn* fn, While* while_loop) {
   NUM done_label = GetLabel();
 
   PlaceLabel(start_label);
-  CodegenExpression(fn, while_loop->WhileCondition, &condition);
+  CodegenExpression(fn, while_loop->WhileCondition, &condition, FALSE);
 
   Emit(OP_TEST, &condition, &condition);
   EmitJump(OP_JZ, done_label);
