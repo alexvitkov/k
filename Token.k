@@ -1,3 +1,4 @@
+const NULL = 0;
 const TOK_NONE = 0;
 
 const TOK_ID = 128;

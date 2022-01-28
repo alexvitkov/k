@@ -107,3 +107,39 @@ fn MakeToken(file, offset, length, type) {
   
   return tok;
 }
+
+fn LexCharacterLiteral(file, offset_ptr) {
+  var tok;
+  var offset;
+  var cur;
+
+  set tok = NULL;
+  set offset = get(offset_ptr);
+
+  if ((get8(file + offset)) != '\'') { return NULL; }
+
+  set offset = offset + 1;
+
+  if (get8(file + offset)) == '\\' {
+    set tok = MakeToken(file, get(offset_ptr), 3, TOK_NONE);
+    set offset = offset + 1;
+
+    set cur = get8(file + offset);
+
+    if cur == 'n' { set tok->TokenNumber = '\n'; }
+    if cur == 't' { set tok->TokenNumber = '\t'; }
+    if cur == '\'' { set tok->TokenNumber = '\''; }
+    if cur == '\\' { set tok->TokenNumber = '\\'; }
+  }
+  else {
+    set tok = MakeToken(file, get(offset_ptr), 2, TOK_NONE);
+    set tok->TokenNumber = get8(file + offset);
+  }
+
+  set offset = offset + 2;
+
+  set tok->TokenType = TOK_NUMBER;
+  set offset_ptr->NULL = offset;
+
+  return tok;
+}

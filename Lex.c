@@ -12,37 +12,7 @@ TokenType InferTokenType(char* str);
 TokenType GetTwoCharOperator(char c1, char c2);
 TokenType GetSingleCharOperator(char c);
 Token* MakeToken(char* file, NUM offset, NUM length, TokenType type);
-
-Token* LexCharacterLiteral(char* file, NUM* offset_ptr) {
-  Token* tok = NULL;
-  NUM offset = *offset_ptr;
-
-  if (file[offset] != '\'')
-    return NULL;
-
-  offset++;
-  if (file[offset] == '\\') {
-    tok = MakeToken(file, *offset_ptr, 3, TOK_NONE);
-    offset++;
-    switch (file[offset]) {
-    case 'n': tok->TokenNumber = '\n'; break;
-    case 't': tok->TokenNumber = '\t'; break;
-    case '\'': tok->TokenNumber = '\''; break;
-    case '\\': tok->TokenNumber = '\\'; break;
-    default: fprintf(stderr, "Invalid escape sequence"); exit(1);
-    }
-  }
-  else {
-    tok = MakeToken(file, *offset_ptr, 2, TOK_NONE);
-    tok->TokenNumber = file[offset];
-  }
-
-  offset += 2;
-
-  tok->TokenType = TOK_NUMBER;
-  *offset_ptr = offset;
-  return tok;
-}
+Token* LexCharacterLiteral(char* file, NUM* offset_ptr);
 
 Token* LexString(char* file, NUM* offset_ptr) {
   Token* tok = NULL;

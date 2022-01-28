@@ -11,7 +11,15 @@ int main(int argc, const char** argv) {
     return 1;
   }
 
+  BOOL print_ast = FALSE;
+
   for (int i = 1; i < argc; i++) {
+    if (strcmp(argv[i], "-ast") == 0) {
+      print_ast = TRUE;
+      continue;
+
+      }
+
     char* file = ReadFile(argv[i]);
     if (!file) {
       fprintf(stderr, "%s: Failed to open file\n", argv[i]);
@@ -30,7 +38,17 @@ int main(int argc, const char** argv) {
     }
   }
 
-  GlobalCodegen();
+  if (print_ast) {
+    Cons* fn = Functions;
+    while (fn) {
+      PrintNode(fn->Value, 0);
+      printf("\n\n");
+      fn = fn->Tail;
+    }
+  }
+  else {
+    GlobalCodegen();
+  }
 
   return 0;
 }
