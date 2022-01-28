@@ -441,6 +441,8 @@ static void DereferenceR11(Location* destination, BOOL byte) {
 
   if (byte) {
     NewLine();
+    printf("XOR r11, r11");
+    NewLine();
     printf("MOV r11b, [r11]");
 
     NewLine();

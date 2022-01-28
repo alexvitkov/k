@@ -1,6 +1,7 @@
 externfn strcmp;
 externfn malloc;
 externfn memcpy;
+externfn putchar;
 
 fn IsSpace(ch) {
    return (ch == ' ') | (ch == '\n') | (ch == '\t');
@@ -141,5 +142,26 @@ fn LexCharacterLiteral(file, offset_ptr) {
   set tok->TokenType = TOK_NUMBER;
   set offset_ptr->NULL = offset;
 
+  return tok;
+}
+
+fn LexString(file, offset_ptr) {
+  var tok;
+  var offset;
+
+  set tok = NULL;
+  set offset = get(offset_ptr);
+
+  if (get8(file + offset)) != '"' { return NULL; }
+  set offset = offset + 1;
+
+  while (get8(file + offset)) != '"' {
+    set offset = offset + 1;
+  }
+
+  set tok = MakeToken(file, (get(offset_ptr)) + 1, offset - (get(offset_ptr)) - 1, TOK_STRING);
+
+  set offset = offset + 1;
+  set offset_ptr->NULL = offset;
   return tok;
 }

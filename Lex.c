@@ -13,26 +13,7 @@ TokenType GetTwoCharOperator(char c1, char c2);
 TokenType GetSingleCharOperator(char c);
 Token* MakeToken(char* file, NUM offset, NUM length, TokenType type);
 Token* LexCharacterLiteral(char* file, NUM* offset_ptr);
-
-Token* LexString(char* file, NUM* offset_ptr) {
-  Token* tok = NULL;
-  NUM offset = *offset_ptr;
-
-  if (file[offset] != '"')
-    return NULL;
-
-  offset++;
-
-  while (file[offset] != '"')
-    offset++;
-
-  tok = MakeToken(file, *offset_ptr + 1, offset - *offset_ptr - 1, TOK_STRING);
-
-  offset++;
-  *offset_ptr = offset;
-  return tok;
-}
-
+Token* LexString(char* file, NUM* offset_ptr);
 
 Cons* LexFile(char* file) {
   Cons* list = 0;

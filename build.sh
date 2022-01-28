@@ -1,4 +1,10 @@
-KC=./stable_compiler 
+if [ a$1 == a-u ]; then
+    KC=./compiler
+else
+    KC=./stable_compiler 
+fi
+
+echo Building with KC=$KC
 
 ${KC} *.k > k.asm || exit 1
 nasm -felf64 k.asm -o k.o || exit 1
