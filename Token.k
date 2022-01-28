@@ -26,9 +26,12 @@ const TOK_VAR = 1006;
 const TOK_SET = 1007;
 const TOK_EXTERNFN = 1008;
 const TOK_STATIC = 1009;
+const TOK_SET8 = 1010;
+
+const TOK_INFER_KEYWORD_OR_IDENTIFIER = 2000;
 
 // Token struct
 const TokenType = 0;
 const TokenString = 8;
-const TokenTokenNumber = 16;
+const TokenNumber = 16;
 const Sizeof_Token = 24;

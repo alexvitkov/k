@@ -478,17 +478,21 @@ static BOOL IsPLT(const char* name) {
 
 static void CodegenArrow(Fn* fn, Call* call, Location* destination, BOOL is_lvalue) {
 
-  Location rhs_loc = { LOC_NONE };
-  Node* lhs = call->CallArguments->Value;
-  Node* rhs = call->CallArguments->Tail->Value;
+  CodegenOperator(fn, call, OP_ADD, destination);
 
-  CodegenExpression(fn, lhs, destination, FALSE);
-  CodegenExpression(fn, rhs, &rhs_loc, FALSE);
+  /* BOOL allocated_temp = destination->LocationSpace == LOC_NONE; */
+  /* if (allocated_temp) AcquireTemp(destination); */
 
-  if (is_lvalue) {
-    Emit(OP_ADD, destination, &rhs_loc);
-  }
-  else {
+  /* Location lhs_loc = { LOC_NONE }; */
+  /* Location rhs_loc = { LOC_NONE }; */
+  /* Node* lhs = call->CallArguments->Value; */
+  /* Node* rhs = call->CallArguments->Tail->Value; */
+
+  /* CodegenExpression(fn, lhs, &lhs_loc, FALSE); */
+  /* CodegenExpression(fn, rhs, &rhs_loc, FALSE); */
+  /* Emit(OP_ADD, &lhs_loc, &rhs_loc); */
+
+  if (!is_lvalue) {
     Emit(OP_MOV, &TempRegister, destination);
     DereferenceR11(destination, FALSE);
   }
@@ -621,7 +625,12 @@ static void CodegenSet(Fn* fn, Set* set) {
 
   Emit(OP_MOV, &TempRegister, &dst_location);
   NewLine();
-  printf("MOV QWORD [r11], r12");
+
+  if (set->SetIsEightBit) {
+    printf("MOV BYTE [r11], r12b");
+  } else {
+    printf("MOV QWORD [r11], r12");
+  }
 }
 
 static void CodegenReturn(Fn* fn, Return* ret) {
@@ -674,7 +683,11 @@ static void CodegenStatement(Fn* fn, Node* statement) {
     case NODE_RETURN: CodegenReturn(fn, (Return*)statement); return;
     case NODE_IF: CodegenIf(fn, (If*)statement); return;
     case NODE_WHILE: CodegenWhile(fn, (While*)statement); return;
+    case NODE_VAR: return;
   }
+
+  Location loc = { LOC_NONE };
+  CodegenExpression(fn, statement, &loc, FALSE);
 }
 
 static void CodegenBlock(Fn* fn, Block* block) {

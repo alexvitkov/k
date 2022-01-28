@@ -9,7 +9,7 @@
 Node* ParseExpression(Cons** stream, TokenType delimiter1, TokenType delimiter2);
 Block* ParseBlock(Cons** stream);
 Var* ParseVar(Cons** stream, BOOL is_static);
-Set* ParseSet(Cons** stream);
+Set* ParseSet(Cons** stream, BOOL is_eight_bit);
 Return* ParseReturn(Cons** stream);
 Node* ParseStatement(Cons** stream);
 If* ParseIf(Cons** stream);
@@ -144,9 +144,10 @@ Var* ParseVar(Cons** stream, BOOL is_static) {
   return var;
 }
 
-Set* ParseSet(Cons** stream) {
-  Set* set      = malloc(sizeof(Set));
-  set->NodeType = NODE_SET;
+Set* ParseSet(Cons** stream, BOOL is8) {
+  Set* set           = malloc(sizeof(Set));
+  set->NodeType      = NODE_SET;
+  set->SetIsEightBit = is8;
 
   set->SetDestination = ParseExpression(stream, '=', '=');
   if (!set->SetDestination) return NULL;
@@ -209,16 +210,21 @@ While* ParseWhile(Cons** stream) {
 }
 
 Node* ParseStatement(Cons** stream) {
-  Token* tok = Pop(stream);
-  if (!tok) return NULL;
+  TokenType tt = Peek(stream);
+  if (tt == TOK_NONE) return NULL;
 
-  if (tok->TokenType == TOK_VAR) return (Node*)ParseVar(stream, FALSE);
-  if (tok->TokenType == TOK_SET) return (Node*)ParseSet(stream);
-  if (tok->TokenType == TOK_RETURN) return (Node*)ParseReturn(stream);
-  if (tok->TokenType == TOK_IF) return (Node*)ParseIf(stream);
-  if (tok->TokenType == TOK_WHILE) return (Node*)ParseWhile(stream);
+  if (tt == TOK_VAR) { Pop(stream); return (Node*)ParseVar(stream, FALSE); }
+  if (tt == TOK_SET) { Pop(stream); return (Node*)ParseSet(stream, FALSE); }
+  if (tt == TOK_SET8) { Pop(stream); return (Node*)ParseSet(stream, TRUE); }
+  if (tt == TOK_RETURN) { Pop(stream); return (Node*)ParseReturn(stream); }
+  if (tt == TOK_IF) { Pop(stream); return (Node*)ParseIf(stream); }
+  if (tt == TOK_WHILE) { Pop(stream); return (Node*)ParseWhile(stream); }
 
-  return NULL;
+  Node* expr = ParseExpression(stream, ';', ';');
+  if (!expr) return NULL;
+
+  Pop(stream); // semicolon
+  return expr;
 }
 
 Block* ParseBlock(Cons** stream) {

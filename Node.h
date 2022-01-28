@@ -56,6 +56,7 @@ typedef struct Set {
   NodeType NodeType; // NODE_SET
   Node* SetDestination;
   Node* SetValue;
+  BOOL SetIsEightBit;
 } Set;
 
 typedef struct Reference {

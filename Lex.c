@@ -11,26 +11,7 @@ NUM StrToNum(char* str);
 TokenType InferTokenType(char* str);
 TokenType GetTwoCharOperator(char c1, char c2);
 TokenType GetSingleCharOperator(char c);
-
-
-Token* MakeToken(char* file, NUM offset, NUM length, TokenType type) {
-  Token* tok = malloc(sizeof(Token));
-
-  tok->Str = malloc(length + 1);
-  memcpy(tok->Str, file + offset, length);
-  tok->Str[length] = 0;
-
-  if (type == TOK_INFER_KEYWORD_OR_IDENTIFIER) {
-    tok->TokenType = InferTokenType(tok->Str);
-  } else if (type == TOK_NUMBER) {
-    tok->TokenNumber = StrToNum(tok->Str);
-    tok->TokenType   = TOK_NUMBER;
-  } else {
-    tok->TokenType = type;
-  }
-
-  return tok;
-}
+Token* MakeToken(char* file, NUM offset, NUM length, TokenType type);
 
 Token* LexCharacterLiteral(char* file, NUM* offset_ptr) {
   Token* tok = NULL;

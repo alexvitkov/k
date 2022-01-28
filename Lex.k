@@ -1,4 +1,6 @@
 externfn strcmp;
+externfn malloc;
+externfn memcpy;
 
 fn IsSpace(ch) {
    return (ch == ' ') | (ch == '\n') | (ch == '\t');
@@ -52,6 +54,7 @@ fn InferTokenType(str) {
   if (strcmp(str, "fn")) == 0 { return TOK_FN; }
   if (strcmp(str, "return")) == 0 { return TOK_RETURN; }
   if (strcmp(str, "set")) == 0 { return TOK_SET; }
+  if (strcmp(str, "set8")) == 0 { return TOK_SET8; }
   if (strcmp(str, "var")) == 0 { return TOK_VAR; }
   if (strcmp(str, "externfn")) == 0 { return TOK_EXTERNFN; }
   if (strcmp(str, "const")) == 0 { return TOK_CONST; }
@@ -79,4 +82,28 @@ fn GetSingleCharOperator(c) {
     return c;
   }
   return TOK_NONE;
+}
+
+
+fn MakeToken(file, offset, length, type) {
+  var tok;
+  set tok = malloc(Sizeof_Token);
+
+  set tok->TokenString = (malloc(length + 1));
+  memcpy((tok->TokenString), (file + offset), length);
+  set8 ((tok->TokenString) + length) = 0;
+  
+  if (type == TOK_INFER_KEYWORD_OR_IDENTIFIER) {
+    set tok->TokenType = InferTokenType(tok->TokenString);
+  }
+  else {
+    if (type == TOK_NUMBER) {
+      set tok->TokenNumber = StrToNum(tok->TokenString);
+      set tok->TokenType   = TOK_NUMBER;
+    } else {
+      set tok->TokenType = type;
+    }
+  }
+  
+  return tok;
 }
