@@ -309,7 +309,7 @@ static void AcquireTemp(Location* out) {
 static void CodegenExpression(Fn* fn, Node* expression, Location* expr_location, BOOL is_lvalue);
 
 static BOOL IsMemoryLocation(NUM loc) {
-  return loc == LOC_RBP_RELATIVE || loc == LOC_STATIC || loc == LOC_STRING;
+  return loc == LOC_RBP_RELATIVE || loc == LOC_STATIC || loc == LOC_STRING || loc == LOC_EXTERN;
 }
 
 static void Emit(Operator op, Location* dst, Location* src) {
@@ -573,10 +573,19 @@ static void CodegenArrow(Fn* fn, Call* call, Location* destination, BOOL is_lval
 
   NUM argument_index = 0;
   Cons* arg = call->CallArguments;
+
+  Location loc[Length(call->CallArguments)];
+
   while (arg) {
-    CodegenExpression(fn, arg->Value, &ArgumentLocationsReg[argument_index], FALSE);
+    AcquireTemp(&loc[argument_index]);
+
+    CodegenExpression(fn, arg->Value, &loc[argument_index], FALSE);
     arg = arg->Tail;
     argument_index++;
+  }
+
+  for (NUM i = 0; i < argument_index; i++) {
+    Emit(OP_MOV, &ArgumentLocationsReg[i], &loc[i]);
   }
 
   NewLine();
