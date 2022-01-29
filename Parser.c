@@ -15,7 +15,7 @@ Node* ParseStatement(Cons** stream);
 If* ParseIf(Cons** stream);
 While* ParseWhile(Cons** stream);
 Fn* ParseFn(Cons** stream);
-BOOL ParseExternFn(Cons** stream);
+BOOL ParseExtern(Cons** stream);
 Node* ParseBreakContinue(Cons** stream, BOOL is_continue);
 
 BOOL IsInfix(TokenType tt) {
@@ -284,7 +284,7 @@ Fn* ParseFn(Cons** stream) {
   return fn;
 }
 
-BOOL ParseExternFn(Cons** stream) {
+BOOL ParseExtern(Cons** stream) {
   Token* name = Expect(stream, TOK_ID);
   if (!name) return FALSE;
 
@@ -337,8 +337,8 @@ BOOL ParseFile(Cons* tokens) {
         break;
       }
 
-      case TOK_EXTERNFN: {
-	if (!ParseExternFn(&stream)) return FALSE;
+      case TOK_EXTERN: {
+	if (!ParseExtern(&stream)) return FALSE;
 	break;
       }
 

@@ -1,7 +1,7 @@
-externfn strcmp;
-externfn malloc;
-externfn memcpy;
-externfn putchar;
+extern strcmp;
+extern malloc;
+extern memcpy;
+extern putchar;
 
 fn IsSpace(ch) {
    return (ch == ' ') | (ch == '\n') | (ch == '\t');
@@ -57,7 +57,7 @@ fn InferTokenType(str) {
   if (strcmp(str, "set")) == 0 { return TOK_SET; }
   if (strcmp(str, "set8")) == 0 { return TOK_SET8; }
   if (strcmp(str, "var")) == 0 { return TOK_VAR; }
-  if (strcmp(str, "externfn")) == 0 { return TOK_EXTERNFN; }
+  if (strcmp(str, "extern")) == 0 { return TOK_EXTERN; }
   if (strcmp(str, "const")) == 0 { return TOK_CONST; }
   if (strcmp(str, "static")) == 0 { return TOK_STATIC; }
   if (strcmp(str, "break")) == 0 { return TOK_BREAK; }
