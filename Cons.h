@@ -10,3 +10,5 @@ typedef struct Cons {
 Cons* Append(Cons** list, void* value);
 NUM Length(Cons* list);
 void* Nth(Cons* list, NUM n);
+
+Cons* LexFile(char* file);

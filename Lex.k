@@ -8,10 +8,10 @@ fn IsSpace(ch) {
 }
 
 fn IsLetter(ch) {
-   if (ch >= 'a') & (ch <= 'z') { return 1; }
-   if (ch >= 'A') & (ch <= 'Z') { return 1; }
-   if ch == '_'                 { return 1; } 
-   return 0;
+   if (ch >= 'a') & (ch <= 'z') { return TRUE; }
+   if (ch >= 'A') & (ch <= 'Z') { return TRUE; }
+   if ch == '_'                 { return TRUE; } 
+   return FALSE;
 }
 
 fn IsDigit(ch) {
@@ -166,4 +166,111 @@ fn LexString(file, offset_ptr) {
   set offset = offset + 1;
   set offset_ptr->NULL = offset;
   return tok;
+}
+
+
+fn LexFile(file) {
+  var list;
+  var i;
+  var tok;
+  var tt;
+  var is_in_word;
+  var is_in_number;
+  var word_start;
+ 
+  set list         = 0;
+  set i            = 0;
+  set is_in_word   = FALSE;
+  set is_in_number = FALSE;
+  set word_start   = -1;
+ 
+  while (1) {
+    // Lex comments
+    if (get8(file+i) == '/') & (get8(file+i) == '/') {
+      while get8(file+i) != '\n' {
+        set i = i + 1;
+      }
+      continue;
+    }
+ 
+    // Character literal
+    set tok = LexCharacterLiteral(file, addr(i));
+    if tok != NULL {
+      set list = Append(addr(list), tok);
+      continue;
+    }
+ 
+    // String
+    set tok = LexString(file, addr(i));
+    if tok {
+      set list = Append(addr(list), tok);
+      continue;
+    }
+ 
+    // Lex identifier
+    if (is_in_word) {
+      if (IsLetter(get8(file+i)) == FALSE) & (IsDigit(get8(file+i)) == FALSE) {
+        set is_in_word = FALSE;
+        set list = Append(addr(list), MakeToken(file, word_start, i - word_start, TOK_INFER_KEYWORD_OR_IDENTIFIER));
+      }
+      else {
+        set i = i + 1;
+        continue;
+      }
+    }
+    else {
+      if (IsLetter(get8(file+i))) {
+        set is_in_word = TRUE;
+        set word_start = i;
+        set i = i + 1;
+        continue;
+      }
+    }
+ 
+    // Lex number
+    if IsDigit(get8(file+i)) {
+      if is_in_number == FALSE {
+        set is_in_number = TRUE;
+        set word_start   = i;
+      }
+      set i = i + 1;
+      continue;
+    } else {
+      if (is_in_number) {
+        set is_in_number = FALSE;
+        set list         = Append(addr(list), MakeToken(file, word_start, i - word_start, TOK_NUMBER));
+      }
+    }
+ 
+    // Lex 2-char op
+    set tt = GetTwoCharOperator(get8(file+i), get8(file + i + 1));
+    if tt != TOK_NONE {
+      set list = Append(addr(list), MakeToken(file, i, 2, tt));
+      set i = i + 2;
+      continue;
+    }
+
+
+    // Lex 1-char op
+    set tt = GetSingleCharOperator(get8(file+i));
+    if tt != TOK_NONE {
+      set list = Append(addr(list), MakeToken(file, i, 1, tt));
+      set i = i + 1;
+      continue;
+    }
+ 
+    if (IsSpace(get8(file+i))) {
+      set i = i + 1;
+      continue;
+    }
+ 
+    if get8(file+i) == 0 {
+      break;
+    }
+ 
+    fprintf(stderr, "Unexpected character '%c'\n", get8(file+i));
+    return NULL;
+  }
+ 
+  return list;
 }
