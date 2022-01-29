@@ -108,7 +108,7 @@ Node* ParseExpression(Cons** stream, TokenType delimiter1, TokenType delimiter2)
 	  }
 	}
 
-	infix_lhs          = so_far;
+	infix_lhs          = NULL;
 	so_far = (Node*)call;
 	continue;
       } else {
