@@ -490,6 +490,10 @@ static void CodegenGet(Fn* fn, Call* call, Location* destination, BOOL byte) {
   DereferenceR11(destination, byte);
 }
 
+static void CodegenAddr(Fn* fn, Call* call, Location* destination, BOOL byte) {
+  CodegenExpression(fn, call->CallArguments->Value, destination, TRUE);
+}
+
 static BOOL IsPLT(const char* name) {
   Cons* nodes = Externs;
 
@@ -546,6 +550,7 @@ static void CodegenArrow(Fn* fn, Call* call, Location* destination, BOOL is_lval
   if (strcmp(fn_name, "->") == 0)  { CodegenArrow(fn, call, destination, is_lvalue); return; }
   if (strcmp(fn_name, "get") == 0) { CodegenGet(fn, call, destination, FALSE); return; }
   if (strcmp(fn_name, "get8") == 0) { CodegenGet(fn, call, destination, TRUE); return; }
+  if (strcmp(fn_name, "addr") == 0) { CodegenAddr(fn, call, destination, TRUE); return; }
   /* clang-format on */
 
   BOOL allocated_temp = destination->LocationSpace == LOC_NONE;
@@ -621,7 +626,7 @@ static void CodegenExpression(Fn* fn, Node* expression, Location* expr_location,
       if (expr_location->LocationSpace == LOC_NONE) {
 	GetVarLocation(fn, name, expr_location, is_lvalue);
       } else {
-	Location loc;
+	Location loc = { LOC_NONE };
 	GetVarLocation(fn, name, &loc, is_lvalue);
 	Emit(OP_MOV, expr_location, &loc);
       }
