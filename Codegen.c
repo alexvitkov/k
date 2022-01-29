@@ -197,6 +197,20 @@ static void AddressOfRBPRelative(Location* rbp_rel, Location* out) {
   Emit(OP_MOV, out, &TempRegister);
 }
 
+static NUM GetLocalsCount(Fn* fn) {
+  NUM count = 0;
+  Cons* statement_list = fn->FnBlock->BlockStatements;
+  while (statement_list) {
+    Node* statement = statement_list->Value;
+    if (statement->NodeType == NODE_VAR) {
+      count++;
+    }
+    statement_list = statement_list->Tail;
+  }
+
+  return count;
+}
+
 static void GetVarLocation(Fn* fn, const char* var_name, Location* out, BOOL is_lvalue) {
   // Check if it's a parameter
   NUM argument_index = 0;
@@ -232,8 +246,9 @@ static void GetVarLocation(Fn* fn, const char* var_name, Location* out, BOOL is_
       const char* other_name = ((Var*)statement)->VarName;
       if (strcmp(other_name, var_name) == 0) {
 	Location loc;
+
 	loc.LocationSpace  = LOC_RBP_RELATIVE;
-	loc.LocationOffset = -(Length(fn->FnParamNames) + local_index + 1) * NUM_SIZE;
+	loc.LocationOffset = -( GetLocalsCount(fn) + Length(fn->FnParamNames) - local_index) * NUM_SIZE;
 
 	if (is_lvalue) {
 	  AddressOfRBPRelative(&loc, out);
