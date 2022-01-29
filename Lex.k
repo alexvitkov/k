@@ -60,6 +60,8 @@ fn InferTokenType(str) {
   if (strcmp(str, "externfn")) == 0 { return TOK_EXTERNFN; }
   if (strcmp(str, "const")) == 0 { return TOK_CONST; }
   if (strcmp(str, "static")) == 0 { return TOK_STATIC; }
+  if (strcmp(str, "break")) == 0 { return TOK_BREAK; }
+  if (strcmp(str, "continue")) == 0 { return TOK_CONTINUE; }
   return TOK_ID;
 }
 

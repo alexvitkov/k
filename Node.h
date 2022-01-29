@@ -18,6 +18,8 @@ enum NodeTypeEnum {
   NODE_IF,
   NODE_WHILE,
   NODE_STRING,
+  NODE_BREAK,
+  NODE_CONTINUE,
 };
 typedef NUM NodeType;
 
@@ -88,5 +90,13 @@ typedef struct String {
   const char* StringStr;
   NUM StringLabel;
 } String;
+
+typedef struct Break {
+  NodeType NodeType; // NODE_BREAK
+} Break;
+
+typedef struct Continue {
+  NodeType NodeType; // NODE_CONTINUE
+} Continue;
 
 void PrintNode(Node* node, NUM indent);

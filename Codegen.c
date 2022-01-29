@@ -4,6 +4,8 @@
 const NUM NUM_SIZE = 8u;
 static NUM CurrentStackOffset;
 static NUM NextLabel = 0;
+static NUM CurrentBreakLabel = 0;
+static NUM CurrentContinueLabel = 0;
 
 enum RegisterEnum {
   REG_RAX = 0,
@@ -441,9 +443,9 @@ static void DereferenceR11(Location* destination, BOOL byte) {
 
   if (byte) {
     NewLine();
-    printf("XOR r11, r11");
-    NewLine();
     printf("MOV r11b, [r11]");
+    NewLine();
+    printf("AND r11, 0x00000000000000FF");
 
     NewLine();
     printf("MOV ");
@@ -536,6 +538,9 @@ static void CodegenArrow(Fn* fn, Call* call, Location* destination, BOOL is_lval
     arg = arg->Tail;
     argument_index++;
   }
+
+  NewLine();
+  printf("XOR RAX, RAX");
 
   NewLine();
   printf("CALL %s", fn_name);
@@ -667,6 +672,11 @@ static void CodegenWhile(Fn* fn, While* while_loop) {
   NUM start_label = GetLabel();
   NUM done_label = GetLabel();
 
+  NUM OldContinueLabel = CurrentContinueLabel;
+  NUM OldBreakLabel = CurrentBreakLabel;
+  CurrentContinueLabel = start_label;
+  CurrentBreakLabel = done_label;
+
   PlaceLabel(start_label);
   CodegenExpression(fn, while_loop->WhileCondition, &condition, FALSE);
 
@@ -677,6 +687,19 @@ static void CodegenWhile(Fn* fn, While* while_loop) {
   EmitJump(OP_JMP, start_label);
 
   PlaceLabel(done_label);
+
+  CurrentContinueLabel = OldContinueLabel;
+  CurrentBreakLabel = OldBreakLabel;
+}
+
+static void CodegenBreak(Fn* fn) {
+  NewLine();
+  printf("JMP _label%ld", CurrentBreakLabel);
+}
+
+static void CodegenContinue(Fn* fn) {
+  NewLine();
+  printf("JMP _label%ld", CurrentContinueLabel);
 }
 
 static void CodegenStatement(Fn* fn, Node* statement) {
@@ -685,6 +708,8 @@ static void CodegenStatement(Fn* fn, Node* statement) {
     case NODE_RETURN: CodegenReturn(fn, (Return*)statement); return;
     case NODE_IF: CodegenIf(fn, (If*)statement); return;
     case NODE_WHILE: CodegenWhile(fn, (While*)statement); return;
+    case NODE_BREAK: CodegenBreak(fn); return;
+    case NODE_CONTINUE: CodegenContinue(fn); return;
     case NODE_VAR: return;
   }
 

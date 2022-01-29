@@ -92,6 +92,14 @@ static void PrintFn(Fn* fn, NUM indent) {
   PrintBlock(fn->FnBlock, indent);
 }
 
+static void PrintBreak(Break* node, NUM indent) {
+  printf("break");
+}
+
+static void PrintContinue(Continue* node, NUM indent) {
+  printf("continue");
+}
+
 void PrintNode(Node* node, NUM indent) {
   switch (node->NodeType) {
     case NODE_FN: return PrintFn((Fn*)node, indent);
@@ -104,6 +112,8 @@ void PrintNode(Node* node, NUM indent) {
     case NODE_NUMBER: return PrintNumber((Number*)node, indent);
     case NODE_IF: return PrintIf((If*)node, indent);
     case NODE_WHILE: return PrintWhile((While*)node, indent);
+    case NODE_BREAK: return PrintBreak((Break*)node, indent);
+    case NODE_CONTINUE: return PrintContinue((Continue*)node, indent);
     default: printf("node"); return;
   }
 }

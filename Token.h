@@ -34,6 +34,8 @@ enum TokenTypeEnum {
   TOK_EXTERNFN = 1008,
   TOK_STATIC = 1009,
   TOK_SET8 = 1010,
+  TOK_BREAK = 1011,
+  TOK_CONTINUE = 1012,
 
   // pseudo tokens
   TOK_INFER_KEYWORD_OR_IDENTIFIER = 2000,

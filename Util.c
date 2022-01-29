@@ -5,7 +5,6 @@
 char* ReadFile(const char* filename) {
   FILE* f = fopen(filename, "r");
   if (!f) {
-    fclose(f);
     return 0;
   }
 

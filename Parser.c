@@ -16,6 +16,7 @@ If* ParseIf(Cons** stream);
 While* ParseWhile(Cons** stream);
 Fn* ParseFn(Cons** stream);
 BOOL ParseExternFn(Cons** stream);
+Node* ParseBreakContinue(Cons** stream, BOOL is_continue);
 
 BOOL IsInfix(TokenType tt) {
   return tt == '&' || tt == '|' || tt == '+' || tt == '-' || tt == '*' || tt == '/' || tt == '<' || tt == '>'
@@ -219,6 +220,8 @@ Node* ParseStatement(Cons** stream) {
   if (tt == TOK_RETURN) { Pop(stream); return (Node*)ParseReturn(stream); }
   if (tt == TOK_IF) { Pop(stream); return (Node*)ParseIf(stream); }
   if (tt == TOK_WHILE) { Pop(stream); return (Node*)ParseWhile(stream); }
+  if (tt == TOK_BREAK) { Pop(stream); return (Node*)ParseBreakContinue(stream, FALSE); }
+  if (tt == TOK_CONTINUE) { Pop(stream); return (Node*)ParseBreakContinue(stream, TRUE); }
 
   Node* expr = ParseExpression(stream, ';', ';');
   if (!expr) return NULL;
@@ -308,6 +311,13 @@ BOOL ParseConst(Cons** stream) {
 
   if (!Expect(stream, ';')) return FALSE;
   return TRUE;
+}
+
+Node* ParseBreakContinue(Cons** stream, BOOL is_continue) {
+  Node* node = malloc(sizeof(Node));
+  node->NodeType = is_continue ? NODE_CONTINUE : NODE_BREAK;
+  if (!Expect(stream, ';')) return NULL;
+  return (Node*)node;
 }
 
 BOOL ParseFile(Cons* tokens) {
