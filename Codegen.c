@@ -580,7 +580,7 @@ static void CodegenArrow(Fn* fn, Call* call, Location* destination, BOOL is_lval
   }
 
   NewLine();
-  printf("XOR RAX, RAX");
+  printf("XOR rax, rax");
 
   NewLine();
   printf("CALL %s", fn_name);
@@ -605,6 +605,8 @@ static void CodegenNumber(Fn* fn, NUM number, Location* expr_location) {
 }
 
 static void CodegenExpression(Fn* fn, Node* expression, Location* expr_location, BOOL is_lvalue) {
+  printf("\n; ");
+  PrintNode(expression, 0);
   switch (expression->NodeType) {
     case NODE_NUMBER: {
       CodegenNumber(fn, ((Number*)expression)->NumberValue, expr_location);
@@ -659,6 +661,7 @@ static void CodegenExpression(Fn* fn, Node* expression, Location* expr_location,
 }
 
 static void CodegenSet(Fn* fn, Set* set) {
+
   Location dst_location = { LOC_NONE };
   CodegenExpression(fn, set->SetDestination, &dst_location, TRUE);
 
@@ -681,8 +684,12 @@ static void CodegenSet(Fn* fn, Set* set) {
 }
 
 static void CodegenReturn(Fn* fn, Return* ret) {
+  Location loc;
+  AcquireTemp(&loc);
+
   if (ret->ReturnValue) {
-    CodegenExpression(fn, ret->ReturnValue, &ReturnLocation, FALSE);
+    CodegenExpression(fn, ret->ReturnValue, &loc, FALSE);
+    Emit(OP_MOV, &ReturnLocation, &loc);
   }
   EmitRet(fn);
 }
