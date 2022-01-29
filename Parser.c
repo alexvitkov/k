@@ -288,7 +288,7 @@ BOOL ParseExtern(Cons** stream) {
   Token* name = Expect(stream, TOK_ID);
   if (!name) return FALSE;
 
-  ExternFunctions = Append(&ExternFunctions, name->Str);
+  Externs = Append(&Externs, name->Str);
 
   if (!Expect(stream, ';')) return FALSE;
   return TRUE;

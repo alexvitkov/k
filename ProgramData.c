@@ -2,7 +2,7 @@
 #include "ProgramData.h"
 
 Cons* Strings = NULL;
-Cons* ExternFunctions = NULL;
+Cons* Externs = NULL;
 Cons* Functions = NULL;
 Cons* Consts = NULL;
 Cons* StaticVariables = NULL;

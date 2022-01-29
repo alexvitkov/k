@@ -9,7 +9,7 @@ typedef struct Const {
 } Const;
 
 extern Cons* Strings;
-extern Cons* ExternFunctions;
+extern Cons* Externs;
 extern Cons* Functions;
 extern Cons* Consts;
 extern Cons* StaticVariables;

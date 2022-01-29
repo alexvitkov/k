@@ -74,6 +74,7 @@ enum LocationSpace {
   LOC_CONSTANT = 3,
   LOC_STRING = 4,
   LOC_STATIC = 5,
+  LOC_EXTERN = 6,
 };
 typedef NUM LocationSpace;
 
@@ -136,6 +137,11 @@ static void PrintLocation(Location* loc) {
     case LOC_STATIC: {
       Var* var = Nth(StaticVariables, loc->LocationOffset);
       printf("QWORD [%s]", var->VarName);
+      return;
+    }
+    case LOC_EXTERN: {
+      const char* var = Nth(Externs, loc->LocationOffset);
+      printf("QWORD [%s]", var);
       return;
     }
     default: {
@@ -253,6 +259,20 @@ static void GetVarLocation(Fn* fn, const char* var_name, Location* out, BOOL is_
     }
     statics = statics->Tail;
     static_index++;
+  }
+
+  // Check if it's a extern
+  Cons* extern_var = Externs;
+  NUM extern_index = 0;
+  while (extern_var) {
+    const char* var = extern_var->Value;
+    if (strcmp(var, var_name) == 0) {
+      out->LocationSpace = LOC_EXTERN;
+      out->LocationOffset = extern_index;
+      return;
+    }
+    extern_var = extern_var->Tail;
+    extern_index++;
   }
 
   // error
@@ -471,7 +491,7 @@ static void CodegenGet(Fn* fn, Call* call, Location* destination, BOOL byte) {
 }
 
 static BOOL IsPLT(const char* name) {
-  Cons* nodes = ExternFunctions;
+  Cons* nodes = Externs;
 
   while (nodes) {
     if (strcmp(name, nodes->Value) == 0) return TRUE;
@@ -752,8 +772,8 @@ static void CodegenFn(Fn* fn) {
 }
 
 void GlobalCodegen() {
-  // Extern functions
-  Cons* efn = ExternFunctions;
+  // Externs
+  Cons* efn = Externs;
   while (efn) {
     printf("extern %s\n", (const char*)efn->Value);
     efn = efn->Tail;
