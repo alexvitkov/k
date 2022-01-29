@@ -7,6 +7,8 @@ static NUM NextLabel = 0;
 static NUM CurrentBreakLabel = 0;
 static NUM CurrentContinueLabel = 0;
 
+static NUM STACK_FRAME = 2000;
+
 enum RegisterEnum {
   REG_RAX = 0,
   REG_RCX = 1,
@@ -300,7 +302,7 @@ static void AcquireTemp(Location* out) {
   out->LocationSpace = LOC_RBP_RELATIVE;
   out->LocationOffset = CurrentStackOffset;
 
-  if (CurrentStackOffset < -990) {
+  if (CurrentStackOffset < -(STACK_FRAME - 10)) {
     fprintf(stderr, "Function blew up the stack frame\n");
     exit(1);
   }
@@ -425,7 +427,7 @@ static void EmitJump(Operator jumpType, NUM label) {
 
 static void EmitRet(Fn* fn) {
   NewLine();
-  printf("ADD rsp, 1000");
+  printf("ADD rsp, %ld\n", STACK_FRAME);
   NewLine();
   printf("POP rbp");
   NewLine();
@@ -798,7 +800,7 @@ static void CodegenFn(Fn* fn) {
 
   CurrentStackOffset = -GetStackFrameSize(fn);
   NewLine();
-  printf("SUB rsp, %ld", 1000 - argc * NUM_SIZE);
+  printf("SUB rsp, %ld", STACK_FRAME - argc * NUM_SIZE);
 
   CodegenBlock(fn, fn->FnBlock);
 
